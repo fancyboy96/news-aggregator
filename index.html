@@ -106,16 +106,136 @@
 
         <!-- Search Section -->
         <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
-            <form id="searchForm" class="flex gap-4 flex-col sm:flex-row">
-                <div class="flex-1">
-                    <input type="text" id="searchInput" required
-                        class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-lg"
-                        placeholder="Search topics (e.g. 'technology AND AI', 'bitcoin')">
+            <form id="searchForm" class="flex flex-col gap-4">
+                <div class="flex gap-4 flex-col sm:flex-row">
+                    <div class="flex-1">
+                        <input type="text" id="searchInput" required
+                            class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-lg"
+                            placeholder="Search topics (e.g. 'technology AND AI', 'bitcoin')">
+                    </div>
+                    <button type="button" id="toggleFiltersBtn"
+                        class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-6 py-3 rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2 border border-slate-300">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                            stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                        </svg>
+                        <span>Filters</span>
+                    </button>
+                    <button type="submit" id="searchBtn"
+                        class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2 min-w-[140px]">
+                        <span>Search</span>
+                    </button>
                 </div>
-                <button type="submit" id="searchBtn"
-                    class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2 min-w-[140px]">
-                    <span>Search</span>
-                </button>
+
+                <!-- Advanced Search Filters -->
+                <div id="filterPanel"
+                    class="hidden pt-4 border-t border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-4 animate-fade-in">
+                    <!-- Sort By -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Sort
+                            By</label>
+                        <select id="sortByInput"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                            <option value="publishedAt">Newest</option>
+                            <option value="relevancy">Relevancy</option>
+                            <option value="popularity">Popularity</option>
+                        </select>
+                    </div>
+
+                    <!-- Language -->
+                    <div>
+                        <label
+                            class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Language</label>
+                        <select id="languageInput"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                            <option value="">All Languages</option>
+                            <option value="en" selected>English</option>
+                            <option value="es">Spanish</option>
+                            <option value="fr">French</option>
+                            <option value="de">German</option>
+                            <option value="it">Italian</option>
+                            <option value="pt">Portuguese</option>
+                            <option value="ru">Russian</option>
+                            <option value="zh">Chinese</option>
+                            <option value="ar">Arabic</option>
+                            <option value="nl">Dutch</option>
+                            <option value="he">Hebrew</option>
+                            <option value="no">Norwegian</option>
+                            <option value="sv">Swedish</option>
+                        </select>
+                    </div>
+
+                    <!-- Page Size -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Results
+                            Per Page</label>
+                        <select id="pageSizeInput"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                            <option value="10">10</option>
+                            <option value="20">20</option>
+                            <option value="50">50</option>
+                            <option value="100">100</option>
+                        </select>
+                    </div>
+
+                    <!-- Date From -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">From
+                            Date</label>
+                        <input type="date" id="fromInput"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none text-slate-600">
+                    </div>
+
+                    <!-- Date To -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">To
+                            Date</label>
+                        <input type="date" id="toInput"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none text-slate-600">
+                    </div>
+
+                    <!-- Search In -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Search
+                            In</label>
+                        <div class="flex gap-3 mt-2">
+                            <label class="inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="form-checkbox text-blue-600 rounded w-4 h-4"
+                                    name="searchIn" value="title" checked>
+                                <span class="ml-2 text-sm text-slate-700">Title</span>
+                            </label>
+                            <label class="inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="form-checkbox text-blue-600 rounded w-4 h-4"
+                                    name="searchIn" value="description" checked>
+                                <span class="ml-2 text-sm text-slate-700">Desc</span>
+                            </label>
+                            <label class="inline-flex items-center cursor-pointer">
+                                <input type="checkbox" class="form-checkbox text-blue-600 rounded w-4 h-4"
+                                    name="searchIn" value="content" checked>
+                                <span class="ml-2 text-sm text-slate-700">Content</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Domains -->
+                    <div class="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label
+                                class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Specific
+                                Domains (comma separated)</label>
+                            <input type="text" id="domainsInput" placeholder="e.g. techcrunch.com, bbc.co.uk"
+                                class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label
+                                class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Exclude
+                                Domains (comma separated)</label>
+                            <input type="text" id="excludeDomainsInput" placeholder="e.g. foxnews.com"
+                                class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none">
+                        </div>
+                    </div>
+                </div>
             </form>
 
             <!-- Error Message -->
@@ -183,6 +303,15 @@
             searchForm: document.getElementById('searchForm'),
             searchInput: document.getElementById('searchInput'),
             searchBtn: document.getElementById('searchBtn'),
+            toggleFiltersBtn: document.getElementById('toggleFiltersBtn'),
+            filterPanel: document.getElementById('filterPanel'),
+            sortByInput: document.getElementById('sortByInput'),
+            languageInput: document.getElementById('languageInput'),
+            pageSizeInput: document.getElementById('pageSizeInput'),
+            fromInput: document.getElementById('fromInput'),
+            toInput: document.getElementById('toInput'),
+            domainsInput: document.getElementById('domainsInput'),
+            excludeDomainsInput: document.getElementById('excludeDomainsInput'),
             errorMessage: document.getElementById('errorMessage'),
             loadingIndicator: document.getElementById('loadingIndicator'),
             resultsGrid: document.getElementById('resultsGrid'),
@@ -216,6 +345,10 @@
         els.changeKeyBtn.addEventListener('click', () => {
             els.apiKeyInput.value = localStorage.getItem(STORAGE_KEY) || '';
             showModal(true);
+        });
+
+        els.toggleFiltersBtn.addEventListener('click', () => {
+            els.filterPanel.classList.toggle('hidden');
         });
 
         els.searchForm.addEventListener('submit', (e) => {
@@ -257,7 +390,34 @@
             els.digestSection.classList.add('hidden');
 
             try {
-                const data = await fetchWithRetry(`${API_BASE_URL}?q=${encodeURIComponent(query)}&pageSize=8&language=en&sortBy=publishedAt&apiKey=${apiKey}`);
+                // Gather parameters
+                const sortBy = els.sortByInput.value;
+                const language = els.languageInput.value;
+                const pageSize = els.pageSizeInput.value;
+                const from = els.fromInput.value;
+                const to = els.toInput.value;
+                const domains = els.domainsInput.value.trim();
+                const excludeDomains = els.excludeDomainsInput.value.trim();
+
+                // Get checked "searchIn" values
+                const searchIn = Array.from(document.querySelectorAll('input[name="searchIn"]:checked'))
+                    .map(cb => cb.value)
+                    .join(',');
+
+                // Construct URL
+                const params = new URLSearchParams();
+                params.append('q', query);
+                params.append('apiKey', apiKey);
+                if (sortBy) params.append('sortBy', sortBy);
+                if (language) params.append('language', language);
+                if (pageSize) params.append('pageSize', pageSize);
+                if (from) params.append('from', from);
+                if (to) params.append('to', to);
+                if (domains) params.append('domains', domains);
+                if (excludeDomains) params.append('excludeDomains', excludeDomains);
+                if (searchIn && searchIn !== 'title,description,content') params.append('searchIn', searchIn);
+
+                const data = await fetchWithRetry(`${API_BASE_URL}?${params.toString()}`);
 
                 if (data.status === 'error') {
                     throw new Error(data.message || 'API Error');
