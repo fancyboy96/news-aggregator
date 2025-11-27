@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>News Aggregator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+
+        /* Custom Scrollbar for the digest box */
+        .digest-box::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .digest-box::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .digest-box::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        .digest-box::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .card-hover {
+            transition: all 0.3s ease;
+        }
+
+        .card-hover:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+        }
+
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 3px solid #3b82f6;
+            width: 24px;
+            height: 24px;
+            -webkit-animation: spin 1s linear infinite;
+            /* Safari */
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+    </style>
+</head>
+
+<body class="min-h-screen text-slate-800">
+
+    <!-- API Key Modal -->
+    <div id="apiKeyModal"
+        class="fixed inset-0 bg-slate-900 bg-opacity-75 flex items-center justify-center z-50 hidden backdrop-blur-sm">
+        <div class="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all">
+            <div class="text-center mb-6">
+                <h2 class="text-2xl font-bold text-slate-900 mb-2">Welcome!</h2>
+                <p class="text-slate-600">Please enter your NewsAPI key to get started.</p>
+                <a href="https://newsapi.org/" target="_blank"
+                    class="text-blue-600 hover:text-blue-700 text-sm underline mt-1 inline-block">Don't have one? Get it
+                    here.</a>
+            </div>
+
+            <form id="apiKeyForm" class="space-y-4">
+                <div>
+                    <label for="apiKeyInput" class="block text-sm font-medium text-slate-700 mb-1">API Key</label>
+                    <input type="text" id="apiKeyInput" required
+                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
+                        placeholder="e.g. 12345abcdef...">
+                </div>
+                <button type="submit"
+                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition-colors shadow-sm">
+                    Save & Continue
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-5xl mx-auto px-4 py-12">
+
+        <!-- Header -->
+        <header class="text-center mb-12">
+            <h1 class="text-4xl font-extrabold text-slate-900 tracking-tight mb-2">News Aggregator</h1>
+            <p class="text-lg text-slate-600">Curate, Generate, Digest.</p>
+            <button id="changeKeyBtn" class="mt-4 text-xs text-slate-400 hover:text-slate-600 underline">Change API
+                Key</button>
+        </header>
+
+        <!-- Search Section -->
+        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
+            <form id="searchForm" class="flex gap-4 flex-col sm:flex-row">
+                <div class="flex-1">
+                    <input type="text" id="searchInput" required
+                        class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors text-lg"
+                        placeholder="Search topics (e.g. 'technology AND AI', 'bitcoin')">
+                </div>
+                <button type="submit" id="searchBtn"
+                    class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-8 py-3 rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2 min-w-[140px]">
+                    <span>Search</span>
+                </button>
+            </form>
+
+            <!-- Error Message -->
+            <div id="errorMessage"
+                class="hidden mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm"></div>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loadingIndicator" class="hidden py-12 flex justify-center items-center">
+            <div class="loader"></div>
+            <span class="ml-3 text-slate-500 font-medium">Fetching latest stories...</span>
+        </div>
+
+        <!-- Results Grid -->
+        <div id="resultsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12 hidden">
+            <!-- Cards will be injected here -->
+        </div>
+
+        <!-- Digest Section -->
+        <div id="digestSection" class="hidden bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
+            <div class="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center flex-wrap gap-4">
+                <h3 class="text-lg font-bold text-slate-800">Email Digest Preview</h3>
+                <button id="copyDigestBtn"
+                    class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-lg transition-colors shadow-sm flex items-center gap-2 text-sm">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
+                        stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                    </svg>
+                    Generate & Copy to Clipboard
+                </button>
+            </div>
+            <div class="p-6 bg-slate-50">
+                <div id="digestContent"
+                    class="digest-box w-full h-96 p-4 bg-white border border-slate-300 rounded-lg font-mono text-sm text-slate-700 whitespace-pre-wrap overflow-y-auto shadow-inner">
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast"
+        class="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none z-50">
+        Copied to clipboard!
+    </div>
+
+    <script>
+        // --- State & Config ---
+        // If we are on localhost, use direct API (works for testing). 
+        // If hosted (Vercel), use the local proxy to avoid CORS/Free tier issues.
+        const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+        const API_BASE_URL = isLocalhost ? 'https://newsapi.org/v2/everything' : '/api/proxy';
+
+        const STORAGE_KEY = 'newsapi_key';
+        let currentArticles = [];
+        let currentQuery = '';
+
+        // --- DOM Elements ---
+        const els = {
+            apiKeyModal: document.getElementById('apiKeyModal'),
+            apiKeyForm: document.getElementById('apiKeyForm'),
+            apiKeyInput: document.getElementById('apiKeyInput'),
+            changeKeyBtn: document.getElementById('changeKeyBtn'),
+            searchForm: document.getElementById('searchForm'),
+            searchInput: document.getElementById('searchInput'),
+            searchBtn: document.getElementById('searchBtn'),
+            errorMessage: document.getElementById('errorMessage'),
+            loadingIndicator: document.getElementById('loadingIndicator'),
+            resultsGrid: document.getElementById('resultsGrid'),
+            digestSection: document.getElementById('digestSection'),
+            digestContent: document.getElementById('digestContent'),
+            copyDigestBtn: document.getElementById('copyDigestBtn'),
+            toast: document.getElementById('toast')
+        };
+
+        // --- Initialization ---
+        function init() {
+            const storedKey = localStorage.getItem(STORAGE_KEY);
+            if (!storedKey) {
+                showModal(true);
+            } else {
+                showModal(false);
+            }
+        }
+
+        // --- Event Listeners ---
+        els.apiKeyForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const key = els.apiKeyInput.value.trim();
+            if (key) {
+                localStorage.setItem(STORAGE_KEY, key);
+                showModal(false);
+                els.apiKeyInput.value = ''; // Clear security risk
+            }
+        });
+
+        els.changeKeyBtn.addEventListener('click', () => {
+            els.apiKeyInput.value = localStorage.getItem(STORAGE_KEY) || '';
+            showModal(true);
+        });
+
+        els.searchForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const query = els.searchInput.value.trim();
+            if (query) {
+                performSearch(query);
+            }
+        });
+
+        els.copyDigestBtn.addEventListener('click', () => {
+            if (currentArticles.length > 0) {
+                const digestText = generateDigestText(currentArticles, currentQuery);
+                copyToClipboard(digestText);
+            }
+        });
+
+        // --- Core Functions ---
+
+        function showModal(show) {
+            if (show) {
+                els.apiKeyModal.classList.remove('hidden');
+            } else {
+                els.apiKeyModal.classList.add('hidden');
+            }
+        }
+
+        async function performSearch(query) {
+            const apiKey = localStorage.getItem(STORAGE_KEY);
+            if (!apiKey) {
+                showModal(true);
+                return;
+            }
+
+            currentQuery = query;
+            setLoading(true);
+            setError(null);
+            els.resultsGrid.classList.add('hidden');
+            els.digestSection.classList.add('hidden');
+
+            try {
+                const data = await fetchWithRetry(`${API_BASE_URL}?q=${encodeURIComponent(query)}&pageSize=8&language=en&sortBy=publishedAt&apiKey=${apiKey}`);
+
+                if (data.status === 'error') {
+                    throw new Error(data.message || 'API Error');
+                }
+
+                if (data.articles && data.articles.length > 0) {
+                    currentArticles = data.articles;
+                    renderResults(data.articles);
+
+                    // Pre-fill digest for preview
+                    const digestText = generateDigestText(data.articles, query);
+                    els.digestContent.textContent = digestText;
+
+                    els.resultsGrid.classList.remove('hidden');
+                    els.digestSection.classList.remove('hidden');
+                } else {
+                    setError('No articles found matching your criteria.');
+                }
+
+            } catch (err) {
+                console.error('Search failed:', err);
+                if (err.message.includes('401') || err.message.includes('apiKey')) {
+                    localStorage.removeItem(STORAGE_KEY);
+                    showModal(true);
+                    setError('Invalid API Key. Please enter a valid key.');
+                } else {
+                    setError(err.message || 'An unexpected error occurred. Please try again.');
+                }
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        async function fetchWithRetry(url, retries = 3, backoff = 300) {
+            try {
+                const response = await fetch(url);
+
+                // Handle HTTP errors explicitly
+                if (!response.ok) {
+                    if (response.status === 401 || response.status === 403) {
+                        throw new Error(`API Key Error (${response.status})`);
+                    }
+                    if (response.status === 429) {
+                        throw new Error('Rate limit reached. Please try again later.');
+                    }
+                    if (response.status === 426) {
+                        throw new Error('NewsAPI does not allow requests from the file system (file://). Please run this app on a local server (e.g. localhost).');
+                    }
+                    throw new Error(`HTTP Error: ${response.status}`);
+                }
+
+                return await response.json();
+
+            } catch (error) {
+                if (retries > 0 && !error.message.includes('API Key Error')) {
+                    await new Promise(resolve => setTimeout(resolve, backoff));
+                    return fetchWithRetry(url, retries - 1, backoff * 2);
+                }
+                throw error;
+            }
+        }
+
+        function renderResults(articles) {
+            els.resultsGrid.innerHTML = articles.map(article => {
+                const date = new Date(article.publishedAt).toLocaleDateString('en-US', {
+                    month: 'short', day: 'numeric', year: 'numeric'
+                });
+                const image = article.urlToImage || 'https://via.placeholder.com/400x200?text=No+Image';
+
+                return `
+                    <article class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden card-hover flex flex-col h-full">
+                        <div class="h-48 overflow-hidden relative bg-slate-200">
+                             <img src="${image}" alt="${article.title}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/400x200?text=No+Image'">
+                             <div class="absolute bottom-0 left-0 bg-gradient-to-t from-black/70 to-transparent w-full p-4">
+                                <span class="text-white text-xs font-bold uppercase tracking-wider bg-blue-600 px-2 py-1 rounded-sm">${article.source.name || 'Unknown Source'}</span>
+                             </div>
+                        </div>
+                        <div class="p-5 flex-1 flex flex-col">
+                            <div class="text-xs text-slate-500 mb-2 font-medium">${date}</div>
+                            <h3 class="text-lg font-bold text-slate-900 mb-2 leading-tight">
+                                <a href="${article.url}" target="_blank" class="hover:text-blue-600 transition-colors">
+                                    ${article.title}
+                                </a>
+                            </h3>
+                            <p class="text-slate-600 text-sm mb-4 flex-1 line-clamp-3">
+                                ${article.description || 'No description available.'}
+                            </p>
+                            <a href="${article.url}" target="_blank" class="text-blue-600 text-sm font-semibold hover:underline mt-auto inline-flex items-center gap-1">
+                                Read full story 
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </a>
+                        </div>
+                    </article>
+                `;
+            }).join('');
+        }
+
+        function generateDigestText(articles, query) {
+            const date = new Date().toLocaleString('en-US');
+            const separator = "=".repeat(60);
+            const divider = "-".repeat(60);
+
+            let text = `${separator}\nNEWS DIGEST\n${separator}\n`;
+            text += `Topic: ${query}\n`;
+            text += `Generated: ${date}\n`;
+            text += `${separator}\n\n`;
+
+            articles.forEach((article, index) => {
+                text += `${index + 1}. ${article.title}\n`;
+                text += `   Source: ${article.source.name}\n`;
+                text += `   Link: ${article.url}\n`;
+                if (article.description) {
+                    text += `   Summary: ${article.description.replace(/\n/g, ' ')}\n`; // Flatten description
+                }
+                text += `\n${divider}\n\n`;
+            });
+
+            text += `End of Digest\n${separator}`;
+            return text;
+        }
+
+        function copyToClipboard(text) {
+            // Fallback for older browsers or non-secure contexts
+            if (!navigator.clipboard) {
+                const textArea = document.createElement("textarea");
+                textArea.value = text;
+                textArea.style.position = "fixed";  // Avoid scrolling to bottom
+                document.body.appendChild(textArea);
+                textArea.focus();
+                textArea.select();
+                try {
+                    document.execCommand('copy');
+                    showToast();
+                } catch (err) {
+                    console.error('Fallback: Oops, unable to copy', err);
+                    alert('Failed to copy to clipboard.');
+                }
+                document.body.removeChild(textArea);
+                return;
+            }
+
+            // Modern API
+            navigator.clipboard.writeText(text).then(function () {
+                showToast();
+            }, function (err) {
+                console.error('Async: Could not copy text: ', err);
+                alert('Failed to copy to clipboard.');
+            });
+        }
+
+        function showToast() {
+            els.toast.classList.remove('opacity-0');
+            setTimeout(() => {
+                els.toast.classList.add('opacity-0');
+            }, 3000);
+        }
+
+        function setLoading(isLoading) {
+            if (isLoading) {
+                els.loadingIndicator.classList.remove('hidden');
+                els.searchBtn.disabled = true;
+                els.searchBtn.innerHTML = '<div class="loader" style="width:16px;height:16px;border-width:2px;"></div> Searching...';
+            } else {
+                els.loadingIndicator.classList.add('hidden');
+                els.searchBtn.disabled = false;
+                els.searchBtn.innerHTML = '<span>Search</span>';
+            }
+        }
+
+        function setError(msg) {
+            if (msg) {
+                els.errorMessage.textContent = msg;
+                els.errorMessage.classList.remove('hidden');
+            } else {
+                els.errorMessage.classList.add('hidden');
+            }
+        }
+
+        // Run Init
+        init();
+
+    </script>
+</body>
+
+</html>
