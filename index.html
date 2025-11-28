@@ -66,42 +66,7 @@
 
 <body class="min-h-screen text-slate-800">
 
-    <!-- API Key Modal -->
-    <div id="apiKeyModal"
-        class="fixed inset-0 bg-slate-900 bg-opacity-75 flex items-center justify-center z-50 hidden backdrop-blur-sm">
-        <div class="bg-white rounded-xl shadow-2xl p-8 max-w-md w-full mx-4 transform transition-all">
-            <div class="text-center mb-6">
-                <h2 class="text-2xl font-bold text-slate-900 mb-2">Welcome!</h2>
-                <p class="text-slate-600">Please choose your news provider and enter your API key.</p>
-            </div>
-
-            <form id="apiKeyForm" class="space-y-4">
-                <div>
-                    <label for="providerSelect" class="block text-sm font-medium text-slate-700 mb-1">News
-                        Provider</label>
-                    <select id="providerSelect"
-                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors bg-white">
-                        <option value="newsapi">NewsAPI.org</option>
-                        <option value="newsdata">NewsData.io</option>
-                    </select>
-                    <div id="providerLink" class="mt-1 text-xs text-right">
-                        <a href="https://newsapi.org/" target="_blank"
-                            class="text-blue-600 hover:text-blue-700 underline">Get NewsAPI Key</a>
-                    </div>
-                </div>
-                <div>
-                    <label for="apiKeyInput" class="block text-sm font-medium text-slate-700 mb-1">API Key</label>
-                    <input type="text" id="apiKeyInput" required
-                        class="w-full px-4 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-colors"
-                        placeholder="e.g. 12345abcdef...">
-                </div>
-                <button type="submit"
-                    class="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition-colors shadow-sm">
-                    Save & Continue
-                </button>
-            </form>
-        </div>
-    </div>
+    <!-- API Key Modal Removed -->
 
     <!-- Main Content -->
     <div class="max-w-5xl mx-auto px-4 py-12">
@@ -112,7 +77,6 @@
             <p class="text-lg text-slate-600">Curate, Generate, Digest.</p>
             <div class="mt-4 flex items-center justify-center gap-4 text-xs text-slate-400">
                 <span id="currentProviderDisplay">Provider: NewsAPI</span>
-                <button id="changeKeyBtn" class="hover:text-slate-600 underline">Change API Key</button>
             </div>
         </header>
 
@@ -143,6 +107,17 @@
                 <!-- Advanced Search Filters -->
                 <div id="filterPanel"
                     class="hidden pt-4 border-t border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-4 animate-fade-in">
+                    <!-- News Provider -->
+                    <div>
+                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">News
+                            Provider</label>
+                        <select id="providerSelect"
+                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                            <option value="newsapi">NewsAPI.org</option>
+                            <option value="newsdata">NewsData.io</option>
+                        </select>
+                    </div>
+
                     <!-- Sort By -->
                     <div>
                         <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Sort
@@ -297,8 +272,8 @@
 
     <script>
         // --- State & Config ---
-        // If we are on localhost or file system, use direct API. 
         // If hosted (e.g. Vercel), use the local proxy to avoid CORS/Free tier issues.
+        // Note: Direct file:// access will fail as it cannot reach /api/proxy.
         const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.protocol === 'file:';
 
         // We will determine the base URL dynamically based on the provider
@@ -310,13 +285,8 @@
 
         // --- DOM Elements ---
         const els = {
-            apiKeyModal: document.getElementById('apiKeyModal'),
-            apiKeyForm: document.getElementById('apiKeyForm'),
-            apiKeyInput: document.getElementById('apiKeyInput'),
             providerSelect: document.getElementById('providerSelect'),
-            providerLink: document.getElementById('providerLink'),
             currentProviderDisplay: document.getElementById('currentProviderDisplay'),
-            changeKeyBtn: document.getElementById('changeKeyBtn'),
             searchForm: document.getElementById('searchForm'),
             searchInput: document.getElementById('searchInput'),
             searchBtn: document.getElementById('searchBtn'),
@@ -341,42 +311,11 @@
         // --- Initialization ---
         function init() {
             updateProviderUI();
-            const storedKey = getApiKey();
-            if (!storedKey) {
-                showModal(true);
-            } else {
-                showModal(false);
-            }
         }
 
         // --- Event Listeners ---
         els.providerSelect.addEventListener('change', () => {
-            updateProviderLink();
-            // Pre-fill key if we have one for this provider
-            const provider = els.providerSelect.value;
-            els.apiKeyInput.value = localStorage.getItem(`apikey_${provider}`) || '';
-        });
-
-        els.apiKeyForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const key = els.apiKeyInput.value.trim();
-            const provider = els.providerSelect.value;
-
-            if (key) {
-                localStorage.setItem(`apikey_${provider}`, key);
-                localStorage.setItem('current_provider', provider);
-                updateProviderUI();
-                showModal(false);
-                els.apiKeyInput.value = ''; // Clear security risk
-            }
-        });
-
-        els.changeKeyBtn.addEventListener('click', () => {
-            const provider = localStorage.getItem('current_provider') || 'newsapi';
-            els.providerSelect.value = provider;
-            updateProviderLink();
-            els.apiKeyInput.value = localStorage.getItem(`apikey_${provider}`) || '';
-            showModal(true);
+            updateProviderUI();
         });
 
         els.toggleFiltersBtn.addEventListener('click', () => {
@@ -400,46 +339,16 @@
 
         // --- Core Functions ---
 
-        function showModal(show) {
-            if (show) {
-                els.apiKeyModal.classList.remove('hidden');
-            } else {
-                els.apiKeyModal.classList.add('hidden');
-            }
-        }
-
-        function getApiKey() {
-            const provider = localStorage.getItem('current_provider') || 'newsapi';
-            return localStorage.getItem(`apikey_${provider}`);
-        }
-
-        function updateProviderLink() {
-            const provider = els.providerSelect.value;
-            const linkContainer = els.providerLink;
-            if (provider === 'newsapi') {
-                linkContainer.innerHTML = '<a href="https://newsapi.org/" target="_blank" class="text-blue-600 hover:text-blue-700 underline">Get NewsAPI Key</a>';
-            } else {
-                linkContainer.innerHTML = '<a href="https://newsdata.io/" target="_blank" class="text-blue-600 hover:text-blue-700 underline">Get NewsData.io Key</a>';
-            }
-        }
-
         function updateProviderUI() {
-            const provider = localStorage.getItem('current_provider') || 'newsapi';
+            const provider = els.providerSelect.value;
             els.currentProviderDisplay.textContent = `Provider: ${provider === 'newsapi' ? 'NewsAPI.org' : 'NewsData.io'}`;
-
-            // Toggle filters based on provider
-            // For simplicity, we'll keep most filters but maybe disable some if strictly needed.
-            // NewsData supports most of what we have, but mapping is key.
         }
 
         async function performSearch(query) {
-            const provider = localStorage.getItem('current_provider') || 'newsapi';
-            const apiKey = getApiKey();
+            const provider = els.providerSelect.value;
 
-            if (!apiKey) {
-                showModal(true);
-                return;
-            }
+            // Note: API Keys are now handled on the backend.
+            // If running locally without a backend, this will fail unless mocked or proxied correctly.
 
             currentQuery = query;
             setLoading(true);
@@ -451,9 +360,9 @@
                 let data;
 
                 if (provider === 'newsdata') {
-                    data = await fetchNewsData(query, apiKey);
+                    data = await fetchNewsData(query);
                 } else {
-                    data = await fetchNewsApi(query, apiKey);
+                    data = await fetchNewsApi(query);
                 }
 
                 if (data.articles && data.articles.length > 0) {
@@ -473,9 +382,7 @@
             } catch (err) {
                 console.error('Search failed:', err);
                 if (err.message.includes('401') || err.message.includes('apiKey') || err.message.includes('API Key')) {
-                    // Don't remove key immediately, just prompt
-                    showModal(true);
-                    setError('Invalid API Key. Please check your key.');
+                    setError('Authentication Error: Please check server configuration.');
                 } else {
                     setError(err.message || 'An unexpected error occurred. Please try again.');
                 }
@@ -484,7 +391,7 @@
             }
         }
 
-        async function fetchNewsApi(query, apiKey) {
+        async function fetchNewsApi(query) {
             // Gather parameters
             const sortBy = els.sortByInput.value;
             const language = els.languageInput.value;
@@ -502,15 +409,9 @@
             // Construct URL
             const params = new URLSearchParams();
             params.append('q', query);
-            params.append('apiKey', apiKey);
 
-            let url;
-            if (isLocal) {
-                url = 'https://newsapi.org/v2/everything';
-            } else {
-                url = '/api/proxy';
-                params.append('provider', 'newsapi');
-            }
+            let url = '/api/proxy';
+            params.append('provider', 'newsapi');
 
             if (sortBy) params.append('sortBy', sortBy);
             if (language) params.append('language', language);
@@ -530,7 +431,7 @@
             return data;
         }
 
-        async function fetchNewsData(query, apiKey) {
+        async function fetchNewsData(query) {
             // NewsData.io mapping
             const language = els.languageInput.value;
             // NewsData uses 'size' instead of 'pageSize', max 50 for paid, 10 for free. We'll request what user asked but it might be capped.
@@ -541,16 +442,8 @@
             const params = new URLSearchParams();
             params.append('q', query); // 'q' is same
 
-            let url;
-            if (isLocal) {
-                url = 'https://newsdata.io/api/1/news';
-                // NewsData expects 'apikey' (lowercase)
-                params.append('apikey', apiKey);
-            } else {
-                url = '/api/proxy';
-                params.append('apiKey', apiKey); // Proxy expects 'apiKey'
-                params.append('provider', 'newsdata');
-            }
+            let url = '/api/proxy';
+            params.append('provider', 'newsdata');
 
             if (language) params.append('language', language);
             if (domains) params.append('domain', domains);
