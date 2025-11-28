@@ -442,7 +442,7 @@
 
             const params = new URLSearchParams();
             params.append('q', query); // 'q' is same
-            params.append('full_content', '1'); // Request full content for highlighting
+            // params.append('full_content', '1'); // Removed: Paid-only feature causing 422 on free plans
 
             let url = '/api/proxy';
             params.append('provider', 'newsdata');
