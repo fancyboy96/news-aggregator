@@ -434,6 +434,7 @@
         async function fetchNewsData(query) {
             // NewsData.io mapping
             const language = els.languageInput.value;
+            const sortBy = els.sortByInput.value;
             // NewsData uses 'size' instead of 'pageSize', max 50 for paid, 10 for free. We'll request what user asked but it might be capped.
             // NewsData domains are 'domain' parameter.
             const domains = els.domainsInput.value.trim();
@@ -441,6 +442,7 @@
 
             const params = new URLSearchParams();
             params.append('q', query); // 'q' is same
+            params.append('full_content', '1'); // Request full content for highlighting
 
             let url = '/api/proxy';
             params.append('provider', 'newsdata');
@@ -449,8 +451,12 @@
             if (domains) params.append('domain', domains);
             if (excludeDomains) params.append('excludedomain', excludeDomains);
 
-            // Note: NewsData doesn't support 'from'/'to' in the same way (uses timeframe), nor sortBy in the same way.
-            // We will ignore those for now or map them if possible.
+            // Sorting Mapping
+            // NewsData supports: pubdateasc, relevancy, source. Default is newest (pubdatedesc equivalent).
+            if (sortBy === 'relevancy' || sortBy === 'popularity') {
+                params.append('sort', 'relevancy');
+            }
+            // If sortBy is 'publishedAt' (Newest), we do nothing as it's the default.
 
             const data = await fetchWithRetry(`${url}?${params.toString()}`);
 
