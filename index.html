@@ -376,7 +376,45 @@
 
         // --- Initialization ---
         function init() {
-            updateProviderUI();
+            // Restore state from URL if present
+            const params = new URLSearchParams(window.location.search);
+            const query = params.get('q');
+
+            if (query) {
+                // Restore inputs
+                els.searchInput.value = query;
+
+                if (params.has('sortBy')) els.sortByInput.value = params.get('sortBy');
+                if (params.has('language')) els.languageInput.value = params.get('language');
+                if (params.has('pageSize')) els.pageSizeInput.value = params.get('pageSize');
+                if (params.has('from')) els.fromInput.value = params.get('from');
+                if (params.has('to')) els.toInput.value = params.get('to');
+                if (params.has('domains')) els.domainsInput.value = params.get('domains');
+                if (params.has('excludeDomains')) els.excludeDomainsInput.value = params.get('excludeDomains');
+
+                // Restore providers
+                if (params.has('provider')) {
+                    const providers = params.get('provider').split(',');
+                    els.providerCheckboxes.forEach(cb => {
+                        cb.checked = providers.includes(cb.value);
+                    });
+                }
+
+                // Restore "Search In" checkboxes
+                if (params.has('searchIn')) {
+                    const searchInValues = params.get('searchIn').split(',');
+                    document.querySelectorAll('input[name="searchIn"]').forEach(cb => {
+                        cb.checked = searchInValues.includes(cb.value);
+                    });
+                }
+
+                updateProviderUI();
+
+                // Auto-trigger search
+                performSearch(query, false); // false = don't push state again on initial load
+            } else {
+                updateProviderUI();
+            }
         }
 
         // --- Event Listeners ---
@@ -393,7 +431,7 @@
             e.preventDefault();
             const query = els.searchInput.value.trim();
             if (query) {
-                performSearch(query);
+                performSearch(query, true);
             }
         });
 
@@ -442,7 +480,7 @@
             }
         }
 
-        async function performSearch(query) {
+        async function performSearch(query, pushState = true) {
             const providers = Array.from(els.providerCheckboxes)
                 .filter(cb => cb.checked)
                 .map(cb => cb.value);
@@ -450,6 +488,29 @@
             if (providers.length === 0) {
                 setError('Please select at least one news provider.');
                 return;
+            }
+
+            // Update URL State
+            if (pushState) {
+                const params = new URLSearchParams();
+                params.set('q', query);
+                params.set('provider', providers.join(','));
+
+                if (els.sortByInput.value) params.set('sortBy', els.sortByInput.value);
+                if (els.languageInput.value) params.set('language', els.languageInput.value);
+                if (els.pageSizeInput.value) params.set('pageSize', els.pageSizeInput.value);
+                if (els.fromInput.value) params.set('from', els.fromInput.value);
+                if (els.toInput.value) params.set('to', els.toInput.value);
+                if (els.domainsInput.value) params.set('domains', els.domainsInput.value);
+                if (els.excludeDomainsInput.value) params.set('excludeDomains', els.excludeDomainsInput.value);
+
+                const searchIn = Array.from(document.querySelectorAll('input[name="searchIn"]:checked'))
+                    .map(cb => cb.value)
+                    .join(',');
+                if (searchIn) params.set('searchIn', searchIn);
+
+                const newUrl = `${window.location.pathname}?${params.toString()}`;
+                window.history.pushState({ path: newUrl }, '', newUrl);
             }
 
             // Note: API Keys are now handled on the backend.
