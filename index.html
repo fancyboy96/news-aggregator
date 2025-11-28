@@ -124,9 +124,9 @@
                             By</label>
                         <select id="sortByInput"
                             class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 outline-none bg-white">
+                            <option value="popularity" selected>Popularity</option>
                             <option value="publishedAt">Newest</option>
                             <option value="relevancy">Relevancy</option>
-                            <option value="popularity">Popularity</option>
                         </select>
                     </div>
 
@@ -504,12 +504,61 @@
             }
         }
 
+        function highlightText(text, query) {
+            if (!text || !query) return text || '';
+            // Escape special regex characters in query
+            const safeQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+            // Split query into words for multi-word matching (optional, but user said "hit of the search")
+            // For strict phrase matching use safeQuery directly. Let's do phrase matching first as it's safer.
+            const regex = new RegExp(`(${safeQuery})`, 'gi');
+            return text.replace(regex, '<mark class="bg-yellow-200 rounded-sm px-0.5">$1</mark>');
+        }
+
+        function getSnippet(content, query) {
+            if (!content || !query) return null;
+            const lowerContent = content.toLowerCase();
+            const lowerQuery = query.toLowerCase();
+            const index = lowerContent.indexOf(lowerQuery);
+
+            if (index === -1) return null;
+
+            // Extract window around the match
+            const start = Math.max(0, index - 50);
+            const end = Math.min(content.length, index + query.length + 50);
+            let snippet = content.substring(start, end);
+
+            // Add ellipsis
+            if (start > 0) snippet = '...' + snippet;
+            if (end < content.length) snippet = snippet + '...';
+
+            return highlightText(snippet, query);
+        }
+
         function renderResults(articles) {
             els.resultsGrid.innerHTML = articles.map(article => {
                 const date = new Date(article.publishedAt).toLocaleDateString('en-US', {
                     month: 'short', day: 'numeric', year: 'numeric'
                 });
                 const image = article.urlToImage || 'https://via.placeholder.com/400x200?text=No+Image';
+
+                // Apply highlighting
+                const titleHtml = highlightText(article.title, currentQuery);
+                const descHtml = highlightText(article.description, currentQuery);
+
+                // Check for content snippet
+                let contentSnippetHtml = '';
+                // Only show snippet if we have content and the query is NOT in the description (to avoid redundancy)
+                // OR if the user explicitly wants to see hits in body. User said: "if its in the body, i would like a small snippet... below the description"
+                // We'll show it if found, regardless of description match, to be safe.
+                if (article.content) {
+                    const snippet = getSnippet(article.content, currentQuery);
+                    if (snippet) {
+                        contentSnippetHtml = `<div class="mt-3 p-2 bg-slate-50 border border-slate-100 rounded text-xs text-slate-500 font-mono">
+                            <span class="font-semibold text-slate-400 uppercase tracking-wider text-[10px] mr-1">Match in content:</span>
+                            ${snippet}
+                        </div>`;
+                    }
+                }
 
                 return `
                     <article class="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden card-hover flex flex-col h-full">
@@ -523,13 +572,14 @@
                             <div class="text-xs text-slate-500 mb-2 font-medium">${date}</div>
                             <h3 class="text-lg font-bold text-slate-900 mb-2 leading-tight">
                                 <a href="${article.url}" target="_blank" class="hover:text-blue-600 transition-colors">
-                                    ${article.title}
+                                    ${titleHtml}
                                 </a>
                             </h3>
                             <p class="text-slate-600 text-sm mb-4 flex-1 line-clamp-3">
-                                ${article.description || 'No description available.'}
+                                ${descHtml || 'No description available.'}
                             </p>
-                            <a href="${article.url}" target="_blank" class="text-blue-600 text-sm font-semibold hover:underline mt-auto inline-flex items-center gap-1">
+                            ${contentSnippetHtml}
+                            <a href="${article.url}" target="_blank" class="text-blue-600 text-sm font-semibold hover:underline mt-auto inline-flex items-center gap-1 pt-4">
                                 Read full story 
                                 <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
                                     <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
