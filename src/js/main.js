@@ -42,9 +42,16 @@ inject();
 window.shareArticle = shareArticle;
 window.toggleArticleSelection = toggleArticleSelection;
 
+import { CountrySelector } from './components/country-selector.js';
+let countrySelector;
+
 // --- Initialization ---
 function init() {
     initTheme();
+
+    // Init Country Selector
+    countrySelector = new CountrySelector(els.countrySelectorContainer);
+
     // Restore state from URL if present
     const params = new URLSearchParams(window.location.search);
     const query = params.get('q');
@@ -55,7 +62,10 @@ function init() {
 
         if (params.has('sortBy')) els.sortByInput.value = params.get('sortBy');
         if (params.has('language')) els.languageInput.value = params.get('language');
-        if (params.has('country')) els.countryInput.value = params.get('country');
+        if (params.has('country')) {
+            const countries = params.get('country').split(',');
+            countrySelector.setValue(countries);
+        }
         if (params.has('pageSize')) els.pageSizeInput.value = params.get('pageSize');
         if (params.has('from')) els.fromInput.value = params.get('from');
         if (params.has('to')) els.toInput.value = params.get('to');
@@ -217,7 +227,7 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
             page: currentPage,
             sortBy: els.sortByInput.value,
             language: els.languageInput.value,
-            country: els.countryInput.value,
+            country: countrySelector.getValue().join(','),
             pageSize: els.pageSizeInput.value,
             from: els.fromInput.value,
             to: els.toInput.value,

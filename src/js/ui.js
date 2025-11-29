@@ -10,7 +10,8 @@ export const els = {
     filterPanel: document.getElementById('filterPanel'),
     sortByInput: document.getElementById('sortByInput'),
     languageInput: document.getElementById('languageInput'),
-    countryInput: document.getElementById('countryInput'),
+    // countryInput: document.getElementById('countryInput'), // Replaced by CountrySelector
+    countrySelectorContainer: 'country-selector-container', // ID string for component init
     pageSizeInput: document.getElementById('pageSizeInput'),
     fromInput: document.getElementById('fromInput'),
     toInput: document.getElementById('toInput'),

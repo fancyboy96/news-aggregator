@@ -27,7 +27,12 @@ export class NewsApiProvider extends NewsProvider {
 
         if (sortBy) params.append('sortBy', sortBy);
         if (language) params.append('language', language);
-        if (country) params.append('country', country);
+        if (country) {
+            // NewsAPI only supports one country code for top-headlines.
+            // If multiple are selected (comma-separated), take the first one.
+            const firstCountry = country.split(',')[0];
+            params.append('country', firstCountry);
+        }
         if (pageSize) params.append('pageSize', pageSize);
         if (from) params.append('from', from);
         if (to) params.append('to', to);

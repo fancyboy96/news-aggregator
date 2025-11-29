@@ -25,7 +25,11 @@ export class GNewsProvider extends NewsProvider {
         params.append('provider', 'gnews');
 
         if (language) params.append('lang', language); // GNews uses 'lang'
-        if (country) params.append('country', country);
+        if (country) {
+            // GNews typically supports one country. Take the first one.
+            const firstCountry = country.split(',')[0];
+            params.append('country', firstCountry);
+        }
         if (pageSize) params.append('max', pageSize);
 
         // Date formatting
