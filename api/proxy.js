@@ -58,6 +58,37 @@ export default async function handler(request) {
     // GNews expects 'apikey'
     apiUrl.searchParams.append('apikey', apiKey);
 
+  } else if (provider === 'thenewsapi') {
+    // TheNewsAPI
+    apiKey = process.env.THENEWSAPI_KEY;
+    if (!apiKey) {
+      return new Response(JSON.stringify({ status: 'error', message: 'Server configuration error: TheNewsAPI Key missing' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // https://api.thenewsapi.com/v1/news/all?api_token=API_TOKEN&search=btc
+    apiUrl = new URL('https://api.thenewsapi.com/v1/news/all');
+
+    // Forward params
+    searchParams.forEach((value, key) => {
+      if (key !== 'apiKey' && key !== 'provider') {
+        // Map 'q' to 'search' if needed, but adapter should handle it.
+        // TheNewsAPI uses 'search' for query, but our app uses 'q'.
+        // We'll map 'q' to 'search' here or in adapter.
+        // Let's map it here to be safe if adapter sends 'q'.
+        if (key === 'q') {
+          apiUrl.searchParams.append('search', value);
+        } else {
+          apiUrl.searchParams.append(key, value);
+        }
+      }
+    });
+
+    // TheNewsAPI expects 'api_token'
+    apiUrl.searchParams.append('api_token', apiKey);
+
   } else {
     // NewsAPI.org API (Default)
     apiKey = process.env.NEWSAPI_KEY;
