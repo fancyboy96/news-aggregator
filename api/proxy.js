@@ -34,6 +34,30 @@ export default async function handler(request) {
     // NewsData.io expects 'apikey' (lowercase)
     apiUrl.searchParams.append('apikey', apiKey);
 
+  } else if (provider === 'gnews') {
+    // GNews API
+    apiKey = process.env.GNEWS_API_KEY;
+    if (!apiKey) {
+      return new Response(JSON.stringify({ status: 'error', message: 'Server configuration error: GNews API Key missing' }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // https://gnews.io/api/v4/search?q=example&apikey=API_KEY
+    apiUrl = new URL('https://gnews.io/api/v4/search');
+
+    // Forward params
+    searchParams.forEach((value, key) => {
+      if (key !== 'apiKey' && key !== 'provider') {
+        // Map common params if necessary, or just forward
+        apiUrl.searchParams.append(key, value);
+      }
+    });
+
+    // GNews expects 'apikey'
+    apiUrl.searchParams.append('apikey', apiKey);
+
   } else {
     // NewsAPI.org API (Default)
     apiKey = process.env.NEWSAPI_KEY;

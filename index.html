@@ -139,13 +139,22 @@
                                 <input type="checkbox"
                                     class="form-checkbox text-emerald-600 rounded w-4 h-4 provider-checkbox"
                                     value="newsapi" checked>
-                                <span class="ml-2 text-sm text-slate-700">NewsAPI.org</span>
+                                <span class="ml-2 text-sm text-slate-700">NewsAPI.org <span id="count-newsapi"
+                                        class="text-xs text-slate-400 ml-1"></span></span>
                             </label>
                             <label class="inline-flex items-center cursor-pointer">
                                 <input type="checkbox"
                                     class="form-checkbox text-emerald-600 rounded w-4 h-4 provider-checkbox"
                                     value="newsdata" checked>
-                                <span class="ml-2 text-sm text-slate-700">NewsData.io</span>
+                                <span class="ml-2 text-sm text-slate-700">NewsData.io <span id="count-newsdata"
+                                        class="text-xs text-slate-400 ml-1"></span></span>
+                            </label>
+                            <label class="inline-flex items-center cursor-pointer">
+                                <input type="checkbox"
+                                    class="form-checkbox text-emerald-600 rounded w-4 h-4 provider-checkbox"
+                                    value="gnews" checked>
+                                <span class="ml-2 text-sm text-slate-700">GNews.io <span id="count-gnews"
+                                        class="text-xs text-slate-400 ml-1"></span></span>
                             </label>
                         </div>
                     </div>
@@ -533,6 +542,12 @@
             els.actionBar.classList.add('hidden');
             setSelectionMode(false); // Reset selection on new search
 
+            // Reset counts
+            ['newsapi', 'newsdata', 'gnews'].forEach(p => {
+                const el = document.getElementById(`count-${p}`);
+                if (el) el.textContent = '';
+            });
+
             try {
                 // Fetch from all selected providers in parallel
                 const promises = providers.map(async provider => {
@@ -540,8 +555,16 @@
                         let data;
                         if (provider === 'newsdata') {
                             data = await fetchNewsData(query);
+                        } else if (provider === 'gnews') {
+                            data = await fetchGNews(query);
                         } else {
                             data = await fetchNewsApi(query);
+                        }
+
+                        // Update total count for this provider
+                        const countEl = document.getElementById(`count-${provider}`);
+                        if (countEl && data.totalResults !== undefined) {
+                            countEl.textContent = `(${data.totalResults})`;
                         }
                         // Tag articles with provider source
                         if (data.articles) {
@@ -688,6 +711,71 @@
                     url: item.link,
                     urlToImage: item.image_url,
                     publishedAt: item.pubDate,
+                    content: item.content
+                }))
+            };
+        }
+
+        async function fetchGNews(query) {
+            // GNews mapping
+            const language = els.languageInput.value;
+            const sortBy = els.sortByInput.value;
+            // GNews uses 'max' for page size (default 10, max 100)
+            const pageSize = els.pageSizeInput.value;
+            // GNews uses 'from' and 'to' in ISO 8601 format (e.g. 2022-08-21T16:27:09Z)
+            const from = els.fromInput.value;
+            const to = els.toInput.value;
+            // GNews uses 'in' to specify where to search (title, description, content)
+
+            const params = new URLSearchParams();
+            params.append('q', query);
+
+            let url = '/api/proxy';
+            params.append('provider', 'gnews');
+
+            if (language) params.append('lang', language);
+            if (pageSize) params.append('max', pageSize);
+
+            // Date formatting if needed. GNews takes "2023-01-01T00:00:00Z"
+            if (from) params.append('from', new Date(from).toISOString());
+            if (to) params.append('to', new Date(to).toISOString());
+
+            // Sort mapping
+            // GNews supports: publishedAt (default), relevance
+            if (sortBy === 'relevancy' || sortBy === 'popularity') {
+                params.append('sortby', 'relevance');
+            } else {
+                params.append('sortby', 'publishedAt');
+            }
+
+            // Search In mapping
+            const searchIn = Array.from(document.querySelectorAll('input[name="searchIn"]:checked'))
+                .map(cb => cb.value);
+            if (searchIn.length > 0) {
+                // GNews uses 'in' parameter with values: title, description, content
+                params.append('in', searchIn.join(','));
+            }
+
+            const data = await fetchWithRetry(`${url}?${params.toString()}`);
+
+            if (data.status === 'error') {
+                // GNews errors usually come as { errors: ["message"] } or just status error
+                const msg = data.errors ? data.errors[0] : (data.message || 'API Error');
+                throw new Error(msg);
+            }
+
+            // Normalize to NewsAPI format
+            return {
+                status: 'ok',
+                totalResults: data.totalArticles,
+                articles: (data.articles || []).map(item => ({
+                    source: { name: item.source.name || 'GNews' },
+                    author: null, // GNews doesn't always provide author in the same way
+                    title: item.title,
+                    description: item.description,
+                    url: item.url,
+                    urlToImage: item.image,
+                    publishedAt: item.publishedAt,
                     content: item.content
                 }))
             };
