@@ -586,6 +586,7 @@
                 const allArticles = mergeResults(resultsArrays);
 
                 if (allArticles.length > 0) {
+                    console.log('Total articles to render:', allArticles.length);
                     currentArticles = allArticles;
                     renderResults(allArticles);
 
@@ -942,7 +943,7 @@
                              <img src="${image}" alt="${article.title}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='https://placehold.co/400x200?text=No+Image'">
                              <div class="absolute bottom-0 left-0 bg-gradient-to-t from-black/70 to-transparent w-full p-4 flex gap-2">
                                 <span class="text-white text-xs font-bold uppercase tracking-wider bg-blue-600 px-2 py-1 rounded-sm">${article.source.name || 'Unknown Source'}</span>
-                                <span class="text-white text-xs font-bold uppercase tracking-wider bg-slate-700 px-2 py-1 rounded-sm border border-slate-500">${article.apiSource === 'newsdata' ? 'NewsData' : 'NewsAPI'}</span>
+                                <span class="text-white text-xs font-bold uppercase tracking-wider bg-slate-700 px-2 py-1 rounded-sm border border-slate-500">${article.apiSource === 'newsdata' ? 'NewsData' : (article.apiSource === 'gnews' ? 'GNews' : 'NewsAPI')}</span>
                              </div>
                         </div>
                         <div class="p-5 flex-1 flex flex-col">
