@@ -126,11 +126,16 @@ export default async function handler(request) {
       });
     }
 
-    apiUrl = new URL('https://newsapi.org/v2/everything');
+    // Check if we should use top-headlines (if category is present)
+    const hasCategory = searchParams.has('category');
+    const endpoint = hasCategory ? 'top-headlines' : 'everything';
+    apiUrl = new URL(`https://newsapi.org/v2/${endpoint}`);
 
     // Forward params
     searchParams.forEach((value, key) => {
       if (key !== 'provider' && key !== 'apiKey') {
+        // Skip empty 'q' parameter
+        if (key === 'q' && !value) return;
         apiUrl.searchParams.append(key, value);
       }
     });

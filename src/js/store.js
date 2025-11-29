@@ -11,7 +11,8 @@ const state = {
     isSearching: false,
     currentPage: 1,
     providers: ['newsapi', 'newsdata', 'gnews'], // Default active providers
-    theme: 'light'
+    theme: 'light',
+    category: ''
 };
 
 const listeners = new Set();

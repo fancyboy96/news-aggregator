@@ -61,6 +61,7 @@ function init() {
         els.searchInput.value = query;
 
         if (params.has('sortBy')) els.sortByInput.value = params.get('sortBy');
+        if (params.has('category')) els.categoryInput.value = params.get('category');
         if (params.has('language')) els.languageInput.value = params.get('language');
         if (params.has('country')) {
             const countries = params.get('country').split(',');
@@ -109,9 +110,23 @@ els.toggleFiltersBtn.addEventListener('click', () => {
 els.searchForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const query = els.searchInput.value.trim();
-    if (query) {
+    const category = els.categoryInput.value;
+
+    if (query || category) {
         performSearch(query, true);
+    } else {
+        setError('Please enter a search term or select a category.');
     }
+});
+
+// Quick Category Buttons
+document.querySelectorAll('.quick-category-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+        const category = btn.dataset.category;
+        els.categoryInput.value = category;
+        els.searchInput.value = ''; // Clear search input
+        performSearch('', true);
+    });
 });
 
 els.copyDigestBtn.addEventListener('click', () => {
@@ -189,6 +204,25 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
         const params = new URLSearchParams();
         params.set('q', query);
         params.set('provider', providers.join(','));
+
+        if (els.categoryInput.value) params.set('category', els.categoryInput.value);
+        if (els.sortByInput.value) params.set('sortBy', els.sortByInput.value);
+        if (els.languageInput.value) params.set('language', els.languageInput.value);
+
+        const countries = countrySelector.getValue();
+        if (countries.length > 0) params.set('country', countries.join(','));
+
+        if (els.pageSizeInput.value) params.set('pageSize', els.pageSizeInput.value);
+        if (els.fromInput.value) params.set('from', els.fromInput.value);
+        if (els.toInput.value) params.set('to', els.toInput.value);
+        if (els.domainsInput.value) params.set('domains', els.domainsInput.value);
+        if (els.excludeDomainsInput.value) params.set('excludeDomains', els.excludeDomainsInput.value);
+
+        const searchIn = Array.from(document.querySelectorAll('input[name="searchIn"]:checked'))
+            .map(cb => cb.value)
+            .join(',');
+        if (searchIn) params.set('searchIn', searchIn);
+
         const newUrl = `${window.location.pathname}?${params.toString()}`;
         window.history.pushState({ path: newUrl }, '', newUrl);
     }
@@ -226,6 +260,7 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
         const options = {
             page: currentPage,
             sortBy: els.sortByInput.value,
+            category: els.categoryInput.value,
             language: els.languageInput.value,
             country: countrySelector.getValue().join(','),
             pageSize: els.pageSizeInput.value,

@@ -83,6 +83,30 @@
                     </div>
                 </form>
 
+                <!-- Quick Categories -->
+                <div class="mt-4 px-1 flex flex-wrap gap-2 justify-center md:justify-start">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider py-2 mr-1">Quick
+                        Browse:</span>
+                    <button
+                        class="quick-category-btn px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/50 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                        data-category="business">Business</button>
+                    <button
+                        class="quick-category-btn px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/50 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                        data-category="technology">Tech</button>
+                    <button
+                        class="quick-category-btn px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/50 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                        data-category="sports">Sports</button>
+                    <button
+                        class="quick-category-btn px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/50 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                        data-category="entertainment">Entertainment</button>
+                    <button
+                        class="quick-category-btn px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/50 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                        data-category="science">Science</button>
+                    <button
+                        class="quick-category-btn px-3 py-1.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/50 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                        data-category="health">Health</button>
+                </div>
+
                 <!-- Advanced Search Filters -->
                 <div id="filterPanel"
                     class="hidden px-4 pb-6 pt-2 border-t border-slate-100 dark:border-slate-700 mt-2">
@@ -145,6 +169,30 @@
                                         <option value="popularity" selected>Popularity</option>
                                         <option value="publishedAt">Newest</option>
                                         <option value="relevancy">Relevancy</option>
+                                    </select>
+                                    <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 9l-7 7-7-7"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Category</label>
+                                <div class="relative">
+                                    <select id="categoryInput"
+                                        class="w-full pl-3 pr-10 py-2.5 bg-slate-50 dark:bg-slate-700 border-none rounded-lg text-sm font-medium text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500 cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-600 transition-colors appearance-none">
+                                        <option value="" selected>All Categories</option>
+                                        <option value="business">Business</option>
+                                        <option value="entertainment">Entertainment</option>
+                                        <option value="general">General</option>
+                                        <option value="health">Health</option>
+                                        <option value="science">Science</option>
+                                        <option value="sports">Sports</option>
+                                        <option value="technology">Technology</option>
                                     </select>
                                     <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
                                         <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor"

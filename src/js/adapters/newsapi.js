@@ -17,11 +17,12 @@ export class NewsApiProvider extends NewsProvider {
             to,
             domains,
             excludeDomains,
-            searchIn
+            searchIn,
+            category
         } = options;
 
         const params = new URLSearchParams();
-        params.append('q', query);
+        if (query) params.append('q', query);
         params.append('page', page);
         params.append('provider', 'newsapi');
 
@@ -32,13 +33,18 @@ export class NewsApiProvider extends NewsProvider {
             // If multiple are selected (comma-separated), take the first one.
             const firstCountry = country.split(',')[0];
             params.append('country', firstCountry);
+        } else {
+            // Default to US for top-headlines if no country specified, as it often yields better results
+            params.append('country', 'us');
         }
         if (pageSize) params.append('pageSize', pageSize);
         if (from) params.append('from', from);
         if (to) params.append('to', to);
         if (domains) params.append('domains', domains);
         if (excludeDomains) params.append('excludeDomains', excludeDomains);
+        if (excludeDomains) params.append('excludeDomains', excludeDomains);
         if (searchIn && searchIn !== 'title,description,content') params.append('searchIn', searchIn);
+        if (category) params.append('category', category);
 
         const url = '/api/proxy';
         const data = await fetchWithRetry(`${url}?${params.toString()}`);

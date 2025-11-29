@@ -9,6 +9,7 @@ export const els = {
     toggleFiltersBtn: document.getElementById('toggleFiltersBtn'),
     filterPanel: document.getElementById('filterPanel'),
     sortByInput: document.getElementById('sortByInput'),
+    categoryInput: document.getElementById('categoryInput'),
     languageInput: document.getElementById('languageInput'),
     // countryInput: document.getElementById('countryInput'), // Replaced by CountrySelector
     countrySelectorContainer: 'country-selector-container', // ID string for component init

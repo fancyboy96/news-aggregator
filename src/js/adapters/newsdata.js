@@ -14,7 +14,8 @@ export class NewsDataProvider extends NewsProvider {
             sortBy, // NewsData doesn't support sorting in free tier easily, but we'll check
             pageSize, // NewsData uses 'size' (max 10 free)
             domains,
-            excludeDomains
+            excludeDomains,
+            category
         } = options;
 
         const params = new URLSearchParams();
@@ -26,7 +27,9 @@ export class NewsDataProvider extends NewsProvider {
         if (country) params.append('country', country);
         if (pageSize) params.append('size', pageSize);
         if (domains) params.append('domain', domains);
+        if (domains) params.append('domain', domains);
         if (excludeDomains) params.append('excludedomain', excludeDomains);
+        if (category) params.append('category', category);
 
         // Sorting Mapping
         if (sortBy === 'relevancy' || sortBy === 'popularity') {
