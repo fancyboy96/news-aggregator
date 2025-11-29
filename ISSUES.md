@@ -1,8 +1,8 @@
 # Feature Requests
 
-## 1. Dark Mode Toggle
-**Problem:** The app currently uses a light theme (`bg-gray-100`, white cards). Reading text-heavy content like news on a bright screen can be straining, especially in low light.
-**Solution:** Add a toggle switch in the header. Use Tailwind's `dark:` variant classes to invert colors (e.g., dark slate background, light gray text) for a more comfortable reading experience.
+## ~~1. Dark Mode Toggle~~
+~~**Problem:** The app currently uses a light theme (`bg-gray-100`, white cards). Reading text-heavy content like news on a bright screen can be straining, especially in low light.~~
+~~**Solution:** Add a toggle switch in the header. Use Tailwind's `dark:` variant classes to invert colors (e.g., dark slate background, light gray text) for a more comfortable reading experience.~~
 
 ## 2. Search History / Recent Queries
 **Problem:** Users often repeat the same searches to check for updates on a topic. Retyping queries and resetting filters is tedious.
