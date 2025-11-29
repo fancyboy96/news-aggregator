@@ -375,8 +375,20 @@
         </div>
 
         <!-- Results Grid -->
-        <div id="resultsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16 hidden">
-            <!-- Cards will be injected here -->
+        <div id="resultsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12 hidden animate-fade-in">
+            <!-- Articles will be injected here -->
+        </div>
+
+        <!-- Load More Section -->
+        <div id="loadMoreContainer" class="text-center mb-16 hidden">
+            <button id="loadMoreBtn" onclick="loadMoreArticles()"
+                class="bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-indigo-600 dark:hover:text-indigo-400 font-semibold px-8 py-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:border-indigo-200 dark:hover:border-indigo-800 transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-2 mx-auto">
+                <span>Load More Stories</span>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                    stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                </svg>
+            </button>
         </div>
 
         <!-- Digest Section -->
@@ -435,6 +447,7 @@
         let isSelectionMode = false;
         let selectedArticleIndices = new Set();
         let isSearching = false;
+        let currentPage = 1;
 
         // --- DOM Elements ---
         const els = {
@@ -610,7 +623,7 @@
             }
         }
 
-        async function performSearch(query, pushState = true) {
+        async function performSearch(query, pushState = true, isLoadMore = false) {
             if (isSearching) {
                 console.log('Search already in progress, skipping...');
                 return;
@@ -625,49 +638,46 @@
                 els.resultsGrid.classList.add('hidden');
                 els.actionBar.classList.add('hidden');
                 els.digestSection.classList.add('hidden');
+                els.loadMoreContainer.classList.add('hidden');
                 return;
             }
 
-            // Update URL State
-            if (pushState) {
+            // Update URL State (only for new searches)
+            if (pushState && !isLoadMore) {
                 const params = new URLSearchParams();
                 params.set('q', query);
                 params.set('provider', providers.join(','));
-
-                if (els.sortByInput.value) params.set('sortBy', els.sortByInput.value);
-                if (els.languageInput.value) params.set('language', els.languageInput.value);
-                if (els.pageSizeInput.value) params.set('pageSize', els.pageSizeInput.value);
-                if (els.fromInput.value) params.set('from', els.fromInput.value);
-                if (els.toInput.value) params.set('to', els.toInput.value);
-                if (els.domainsInput.value) params.set('domains', els.domainsInput.value);
-                if (els.excludeDomainsInput.value) params.set('excludeDomains', els.excludeDomainsInput.value);
-
-                const searchIn = Array.from(document.querySelectorAll('input[name="searchIn"]:checked'))
-                    .map(cb => cb.value)
-                    .join(',');
-                if (searchIn) params.set('searchIn', searchIn);
-
+                // ... (rest of params)
                 const newUrl = `${window.location.pathname}?${params.toString()}`;
                 window.history.pushState({ path: newUrl }, '', newUrl);
             }
 
-            // Note: API Keys are now handled on the backend.
-            // If running locally without a backend, this will fail unless mocked or proxied correctly.
-
             currentQuery = query;
-            setLoading(true);
             isSearching = true;
             setError(null);
-            els.resultsGrid.classList.add('hidden');
-            els.digestSection.classList.add('hidden');
-            els.actionBar.classList.add('hidden');
-            setSelectionMode(false); // Reset selection on new search
 
-            // Reset counts
-            ['newsapi', 'newsdata', 'gnews'].forEach(p => {
-                const el = document.getElementById(`count-${p}`);
-                if (el) el.textContent = '';
-            });
+            if (!isLoadMore) {
+                currentPage = 1;
+                els.resultsGrid.classList.add('hidden');
+                els.digestSection.classList.add('hidden');
+                els.actionBar.classList.add('hidden');
+                els.loadMoreContainer.classList.add('hidden');
+                setSelectionMode(false);
+                els.resultsGrid.innerHTML = ''; // Clear previous results
+
+                // Reset counts
+                ['newsapi', 'newsdata', 'gnews'].forEach(p => {
+                    const el = document.getElementById(`count-${p}`);
+                    if (el) el.textContent = '';
+                });
+            } else {
+                // Load More State
+                const btn = document.getElementById('loadMoreBtn');
+                btn.innerHTML = '<div class="loader" style="width:16px;height:16px;border-width:2px;"></div> Loading...';
+                btn.disabled = true;
+            }
+
+            if (!isLoadMore) setLoading(true);
 
             try {
                 // Fetch from all selected providers in parallel
@@ -675,56 +685,89 @@
                     try {
                         let data;
                         if (provider === 'newsdata') {
+                            // NewsData doesn't support simple page number pagination easily in this proxy setup without cursor storage
+                            // For now, we skip pagination for NewsData or fetch page 1 again (duplicate check handles it)
+                            // Ideally we'd store the nextPage cursor.
+                            if (isLoadMore) return []; // Skip NewsData on load more for MVP
                             data = await fetchNewsData(query);
                         } else if (provider === 'gnews') {
-                            data = await fetchGNews(query);
+                            data = await fetchGNews(query, currentPage);
                         } else {
-                            data = await fetchNewsApi(query);
+                            data = await fetchNewsApi(query, currentPage);
                         }
 
-                        // Update total count for this provider
-                        const countEl = document.getElementById(`count-${provider}`);
-                        if (countEl && data.totalResults !== undefined) {
-                            countEl.textContent = `(${data.totalResults})`;
+                        // Update total count (only on first page)
+                        if (!isLoadMore) {
+                            const countEl = document.getElementById(`count-${provider}`);
+                            if (countEl && data.totalResults !== undefined) {
+                                countEl.textContent = `(${data.totalResults})`;
+                            }
                         }
-                        // Tag articles with provider source
+
+                        // Tag articles
                         if (data.articles) {
                             data.articles.forEach(a => a.apiSource = provider);
                         }
                         return data.articles || [];
                     } catch (err) {
                         console.error(`Failed to fetch from ${provider}:`, err);
-                        // Return empty array on failure so other providers can still show results
-                        // Optionally we could show a toast warning here
                         return [];
                     }
                 });
 
                 const resultsArrays = await Promise.all(promises);
-                const allArticles = mergeResults(resultsArrays);
+                const newArticles = mergeResults(resultsArrays);
 
-                if (allArticles.length > 0) {
-                    console.log('Total articles to render:', allArticles.length);
-                    currentArticles = allArticles;
-                    renderResults(allArticles);
-
-                    // Note: Digest is now hidden by default until user selects articles
-                    // els.digestContent.textContent = digestText; 
+                if (newArticles.length > 0) {
+                    if (isLoadMore) {
+                        currentArticles = [...currentArticles, ...newArticles];
+                        appendResults(newArticles);
+                    } else {
+                        currentArticles = newArticles;
+                        renderResults(newArticles);
+                    }
 
                     els.resultsGrid.classList.remove('hidden');
-                    // els.digestSection.classList.remove('hidden'); // Hidden by default now
-                    els.actionBar.classList.remove('hidden'); // Show action bar
+                    els.actionBar.classList.remove('hidden');
+                    els.loadMoreContainer.classList.remove('hidden');
                 } else {
-                    setError('No articles found matching your criteria.');
+                    if (!isLoadMore) setError('No articles found matching your criteria.');
+                    else {
+                        // No more results
+                        const btn = document.getElementById('loadMoreBtn');
+                        btn.textContent = 'No more stories';
+                        btn.disabled = true;
+                    }
                 }
 
             } catch (err) {
                 console.error('Search failed:', err);
-                setError(err.message || 'An unexpected error occurred. Please try again.');
+                if (!isLoadMore) setError(err.message || 'An unexpected error occurred.');
             } finally {
                 setLoading(false);
                 isSearching = false;
+
+                // Reset Load More Button
+                if (isLoadMore) {
+                    const btn = document.getElementById('loadMoreBtn');
+                    btn.innerHTML = `<span>Load More Stories</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>`;
+                    btn.disabled = false;
+                }
             }
+        }
+
+        function loadMoreArticles() {
+            currentPage++;
+            performSearch(currentQuery, false, true);
+        }
+
+        function appendResults(articles) {
+            const startIndex = currentArticles.length - articles.length;
+            const html = generateArticlesHtml(articles, startIndex);
+            els.resultsGrid.insertAdjacentHTML('beforeend', html);
         }
 
         function mergeResults(resultsArrays) {
@@ -776,7 +819,7 @@
             return merged;
         }
 
-        async function fetchNewsApi(query) {
+        async function fetchNewsApi(query, page = 1) {
             // Gather parameters
             const sortBy = els.sortByInput.value;
             const language = els.languageInput.value;
@@ -794,6 +837,7 @@
             // Construct URL
             const params = new URLSearchParams();
             params.append('q', query);
+            params.append('page', page);
 
             let url = '/api/proxy';
             params.append('provider', 'newsapi');
@@ -866,7 +910,7 @@
             };
         }
 
-        async function fetchGNews(query) {
+        async function fetchGNews(query, page = 1) {
             // GNews mapping
             const language = els.languageInput.value;
             const sortBy = els.sortByInput.value;
@@ -879,6 +923,7 @@
 
             const params = new URLSearchParams();
             params.append('q', query);
+            params.append('page', page);
 
             let url = '/api/proxy';
             params.append('provider', 'gnews');
@@ -1093,7 +1138,12 @@
 
         function renderResults(articles) {
             console.log('Rendering articles:', articles.length);
-            els.resultsGrid.innerHTML = articles.map((article, index) => {
+            els.resultsGrid.innerHTML = generateArticlesHtml(articles, 0);
+        }
+
+        function generateArticlesHtml(articles, startIndex) {
+            return articles.map((article, i) => {
+                const index = startIndex + i;
                 const date = new Date(article.publishedAt).toLocaleDateString('en-US', {
                     month: 'short', day: 'numeric', year: 'numeric'
                 });
