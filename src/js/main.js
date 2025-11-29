@@ -247,18 +247,23 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
             }
         });
 
-        const resultsArrays = await Promise.all(promises);
-        const newArticles = mergeResults(resultsArrays);
+        // If Load More, include current articles in the merge to re-sort everything
+        let allResultsArrays = resultsArrays;
+        if (isLoadMore) {
+            const currentArticles = store.get('articles');
+            // currentArticles is a flat array, resultsArrays is array of arrays
+            // We wrap currentArticles in an array so it's treated as one "batch" to be flattened
+            allResultsArrays = [currentArticles, ...resultsArrays];
+        }
+
+        const newArticles = mergeResults(allResultsArrays, options.sortBy);
 
         if (newArticles.length > 0) {
-            if (isLoadMore) {
-                const currentArticles = store.get('articles');
-                store.set({ articles: [...currentArticles, ...newArticles] });
-                appendResults(newArticles, currentArticles.length, store.get('query'), store.get('isSelectionMode'), store.get('selectedArticleIndices'));
-            } else {
-                store.set({ articles: newArticles });
-                renderResults(newArticles, store.get('query'), store.get('isSelectionMode'), store.get('selectedArticleIndices'));
-            }
+            store.set({ articles: newArticles });
+            // Always render full results to ensure correct order
+            renderResults(newArticles, store.get('query'), store.get('isSelectionMode'), store.get('selectedArticleIndices'));
+
+            els.resultsGrid.classList.remove('hidden');
 
             els.resultsGrid.classList.remove('hidden');
             els.actionBar.classList.remove('hidden');
@@ -298,7 +303,7 @@ function loadMoreArticles() {
     performSearch(store.get('query'), false, true);
 }
 
-function mergeResults(resultsArrays) {
+function mergeResults(resultsArrays, sortBy = 'publishedAt') {
     // Flatten array of arrays
     let merged = resultsArrays.flat();
     console.log('Merged raw results:', merged.length);
@@ -339,10 +344,15 @@ function mergeResults(resultsArrays) {
     });
     console.log('Deduped results:', merged.length);
 
-    // Sort by Date (Newest first)
-    merged.sort((a, b) => {
-        return new Date(b.publishedAt) - new Date(a.publishedAt);
-    });
+    // Sort by Date (Newest first) if requested or default
+    if (!sortBy || sortBy === 'publishedAt') {
+        merged.sort((a, b) => {
+            return new Date(b.publishedAt) - new Date(a.publishedAt);
+        });
+    }
+    // For 'popularity' or 'relevancy', we keep the provider's order (interleaved)
+    // or we could try to sort by some other metric if available.
+    // But since we don't have a unified score, we leave it as is (which is roughly interleaved).
 
     return merged;
 }
