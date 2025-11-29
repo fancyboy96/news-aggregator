@@ -1,0 +1,78 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+    font-family: 'Inter', sans-serif;
+    background-color: #f8fafc;
+    /* Slate-50 */
+    color: #0f172a;
+    /* Slate-900 */
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+
+.card-hover {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card-hover:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.loader {
+    border: 3px solid #e2e8f0;
+    border-radius: 50%;
+    border-top: 3px solid #6366f1;
+    /* Indigo-500 */
+    width: 24px;
+    height: 24px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
+}
+
+/* Selection Mode Styles */
+.selection-mode .article-card {
+    cursor: pointer;
+}
+
+.article-card.selected {
+    box-shadow: 0 0 0 3px #6366f1;
+    /* Indigo-500 */
+    background-color: #eef2ff;
+    /* Indigo-50 */
+}
+
+/* Custom Checkbox Style */
+.form-checkbox {
+    border-radius: 6px;
+    border-color: #cbd5e1;
+}
