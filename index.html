@@ -846,11 +846,19 @@
 
         function highlightText(text, query) {
             if (!text || !query) return text || '';
-            // Escape special regex characters in query
-            const safeQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-            // Split query into words for multi-word matching (optional, but user said "hit of the search")
-            // For strict phrase matching use safeQuery directly. Let's do phrase matching first as it's safer.
-            const regex = new RegExp(`(${safeQuery})`, 'gi');
+
+            // Split into words, filter empty
+            const words = query.split(/\s+/).filter(w => w.length > 0);
+            if (words.length === 0) return text;
+
+            // Escape and sort by length desc to match longer phrases first if possible (though regex | matches in order)
+            const safeWords = words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+                .sort((a, b) => b.length - a.length);
+
+            // Join with | for OR matching
+            const pattern = `(${safeWords.join('|')})`;
+            const regex = new RegExp(pattern, 'gi');
+
             return text.replace(regex, '<mark class="bg-yellow-200 rounded-sm px-0.5">$1</mark>');
         }
 
