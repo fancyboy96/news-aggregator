@@ -763,12 +763,16 @@
             }
 
             // Search In mapping
-            const searchIn = Array.from(document.querySelectorAll('input[name="searchIn"]:checked'))
+            // Note: GNews 'in' parameter often causes empty results on free plans if it filters out too much or hits historical data limits.
+            // We will omit it for now to ensure results are returned.
+            /*
+             const searchIn = Array.from(document.querySelectorAll('input[name="searchIn"]:checked'))
                 .map(cb => cb.value);
             if (searchIn.length > 0) {
                 // GNews uses 'in' parameter with values: title, description, content
                 params.append('in', searchIn.join(','));
             }
+            */
 
             console.log('Fetching GNews with params:', params.toString());
 
