@@ -249,6 +249,8 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
             }
         });
 
+        const resultsArrays = await Promise.all(promises);
+
         // If Load More, include current articles in the merge to re-sort everything
         let allResultsArrays = resultsArrays;
         if (isLoadMore) {
