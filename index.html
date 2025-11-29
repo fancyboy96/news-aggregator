@@ -7,48 +7,50 @@
     <title>Briefly</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
+            background-color: #f8fafc;
+            /* Slate-50 */
+            color: #0f172a;
+            /* Slate-900 */
         }
 
-        /* Custom Scrollbar for the digest box */
-        .digest-box::-webkit-scrollbar {
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
             width: 8px;
         }
 
-        .digest-box::-webkit-scrollbar-track {
-            background: #f1f1f1;
+        ::-webkit-scrollbar-track {
+            background: transparent;
         }
 
-        .digest-box::-webkit-scrollbar-thumb {
+        ::-webkit-scrollbar-thumb {
             background: #cbd5e1;
-            border-radius: 4px;
+            border-radius: 10px;
         }
 
-        .digest-box::-webkit-scrollbar-thumb:hover {
+        ::-webkit-scrollbar-thumb:hover {
             background: #94a3b8;
         }
 
         .card-hover {
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         .card-hover:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            transform: translateY(-4px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
         }
 
         .loader {
-            border: 3px solid #f3f3f3;
+            border: 3px solid #e2e8f0;
             border-radius: 50%;
-            border-top: 3px solid #10b981;
+            border-top: 3px solid #6366f1;
+            /* Indigo-500 */
             width: 24px;
             height: 24px;
-            -webkit-animation: spin 1s linear infinite;
-            /* Safari */
             animation: spin 1s linear infinite;
         }
 
@@ -67,237 +69,263 @@
             cursor: pointer;
         }
 
-        .selection-checkbox {
-            transition: all 0.2s ease;
+        .article-card.selected {
+            box-shadow: 0 0 0 3px #6366f1;
+            /* Indigo-500 */
+            background-color: #eef2ff;
+            /* Indigo-50 */
         }
 
-        .article-card.selected {
-            box-shadow: 0 0 0 2px #10b981;
-            background-color: #ecfdf5;
+        /* Custom Checkbox Style */
+        .form-checkbox {
+            border-radius: 6px;
+            border-color: #cbd5e1;
+        }
+
+        /* Fade In Animation */
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .animate-fade-in {
+            animation: fadeIn 0.5s ease-out forwards;
         }
     </style>
 </head>
 
-<body class="min-h-screen text-slate-800">
+<body class="min-h-screen selection:bg-indigo-100 selection:text-indigo-700">
 
     <!-- API Key Modal Removed -->
 
     <!-- Main Content -->
-    <div class="max-w-5xl mx-auto px-4 py-12">
+    <div class="max-w-6xl mx-auto px-6 py-16">
 
         <!-- Header -->
-        <header class="text-center mb-12 flex flex-col items-center">
-            <div class="mb-4">
-                <svg width="64" height="64" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <rect width="100" height="100" rx="20" fill="#10B981" />
-                    <path d="M30 35L45 50L70 25" stroke="white" stroke-width="8" stroke-linecap="round"
-                        stroke-linejoin="round" />
-                    <path d="M30 60H70" stroke="white" stroke-width="8" stroke-linecap="round" />
-                    <path d="M30 75H55" stroke="white" stroke-width="8" stroke-linecap="round" />
-                </svg>
-            </div>
-            <h1 class="text-4xl font-extrabold text-slate-900 tracking-tight mb-2">Briefly</h1>
-            <p class="text-lg text-slate-600">Turn the noise of the news into a clear, curated digest.</p>
-            <div class="mt-4 flex items-center justify-center gap-4 text-xs text-slate-400">
+        <header class="text-center mb-16 animate-fade-in">
+            <h1 class="text-6xl font-extrabold tracking-tight text-slate-900 mb-4">
+                Briefly<span class="text-indigo-500">.</span>
+            </h1>
+            <p class="text-xl text-slate-500 font-light max-w-2xl mx-auto leading-relaxed">
+                Turn the noise of the news into a clear, curated digest.
+            </p>
+            <div
+                class="mt-6 inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-white border border-slate-200 shadow-sm text-xs font-medium text-slate-400">
                 <span id="currentProviderDisplay">Provider: NewsAPI</span>
             </div>
         </header>
 
         <!-- Search Section -->
-        <div class="bg-white rounded-xl shadow-sm border border-slate-200 p-6 mb-8">
-            <form id="searchForm" class="flex flex-col gap-4">
-                <div class="flex gap-4 flex-col sm:flex-row">
-                    <div class="flex-1">
+        <div class="max-w-4xl mx-auto mb-12 animate-fade-in" style="animation-delay: 0.1s;">
+            <div class="bg-white rounded-3xl shadow-xl shadow-slate-200/50 p-2 border border-slate-100">
+                <form id="searchForm" class="flex flex-col md:flex-row gap-2">
+                    <div class="flex-1 relative">
+                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+                            <svg class="h-5 w-5 text-slate-400" xmlns="http://www.w3.org/2000/svg" fill="none"
+                                viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
                         <input type="text" id="searchInput" required
-                            class="w-full px-4 py-3 border border-slate-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 outline-none transition-colors text-lg"
-                            placeholder="Search topics (e.g. 'technology AND AI', 'bitcoin')">
+                            class="w-full pl-11 pr-4 py-4 bg-transparent border-none rounded-2xl focus:ring-0 text-lg text-slate-800 placeholder-slate-400 outline-none"
+                            placeholder="Search topics (e.g. 'technology', 'crypto')">
                     </div>
-                    <button type="button" id="toggleFiltersBtn"
-                        class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold px-6 py-3 rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2 border border-slate-300">
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                            stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
-                        </svg>
-                        <span>Filters</span>
-                    </button>
-                    <button type="submit" id="searchBtn"
-                        class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-8 py-3 rounded-lg transition-colors shadow-sm flex items-center justify-center gap-2 min-w-[140px]">
-                        <span>Search</span>
-                    </button>
-                </div>
+
+                    <div class="flex gap-2 p-1">
+                        <button type="button" id="toggleFiltersBtn"
+                            class="px-5 py-3 rounded-xl text-slate-500 hover:bg-slate-50 hover:text-slate-700 font-medium transition-colors flex items-center gap-2">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
+                                stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+                            </svg>
+                            <span>Filters</span>
+                        </button>
+                        <button type="submit" id="searchBtn"
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-8 py-3 rounded-xl transition-all shadow-lg shadow-indigo-200 hover:shadow-indigo-300 active:scale-95">
+                            Search
+                        </button>
+                    </div>
+                </form>
 
                 <!-- Advanced Search Filters -->
-                <div id="filterPanel"
-                    class="hidden pt-4 border-t border-slate-200 grid grid-cols-1 md:grid-cols-3 gap-4 animate-fade-in">
-                    <!-- News Provider -->
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">News
-                            Provider</label>
-                        <div class="flex flex-col gap-2 mt-2" id="providerContainer">
-                            <label class="inline-flex items-center cursor-pointer">
-                                <input type="checkbox"
-                                    class="form-checkbox text-emerald-600 rounded w-4 h-4 provider-checkbox"
-                                    value="newsapi" checked>
-                                <span class="ml-2 text-sm text-slate-700">NewsAPI.org <span id="count-newsapi"
-                                        class="text-xs text-slate-400 ml-1"></span></span>
-                            </label>
-                            <label class="inline-flex items-center cursor-pointer">
-                                <input type="checkbox"
-                                    class="form-checkbox text-emerald-600 rounded w-4 h-4 provider-checkbox"
-                                    value="newsdata" checked>
-                                <span class="ml-2 text-sm text-slate-700">NewsData.io <span id="count-newsdata"
-                                        class="text-xs text-slate-400 ml-1"></span></span>
-                            </label>
-                            <label class="inline-flex items-center cursor-pointer">
-                                <input type="checkbox"
-                                    class="form-checkbox text-emerald-600 rounded w-4 h-4 provider-checkbox"
-                                    value="gnews" checked>
-                                <span class="ml-2 text-sm text-slate-700">GNews.io <span id="count-gnews"
-                                        class="text-xs text-slate-400 ml-1"></span></span>
-                            </label>
+                <div id="filterPanel" class="hidden px-4 pb-6 pt-2 border-t border-slate-100 mt-2">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                        <!-- News Provider -->
+                        <div class="space-y-3">
+                            <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Providers</label>
+                            <div class="flex flex-col gap-3" id="providerContainer">
+                                <label class="flex items-center cursor-pointer group">
+                                    <input type="checkbox"
+                                        class="form-checkbox text-indigo-600 rounded-md w-5 h-5 border-slate-300 focus:ring-indigo-500 provider-checkbox"
+                                        value="newsapi" checked>
+                                    <span
+                                        class="ml-3 text-sm font-medium text-slate-600 group-hover:text-slate-900 transition-colors">NewsAPI.org
+                                        <span id="count-newsapi" class="text-xs text-slate-400 ml-1"></span></span>
+                                </label>
+                                <label class="flex items-center cursor-pointer group">
+                                    <input type="checkbox"
+                                        class="form-checkbox text-indigo-600 rounded-md w-5 h-5 border-slate-300 focus:ring-indigo-500 provider-checkbox"
+                                        value="newsdata" checked>
+                                    <span
+                                        class="ml-3 text-sm font-medium text-slate-600 group-hover:text-slate-900 transition-colors">NewsData.io
+                                        <span id="count-newsdata" class="text-xs text-slate-400 ml-1"></span></span>
+                                </label>
+                                <label class="flex items-center cursor-pointer group">
+                                    <input type="checkbox"
+                                        class="form-checkbox text-indigo-600 rounded-md w-5 h-5 border-slate-300 focus:ring-indigo-500 provider-checkbox"
+                                        value="gnews" checked>
+                                    <span
+                                        class="ml-3 text-sm font-medium text-slate-600 group-hover:text-slate-900 transition-colors">GNews.io
+                                        <span id="count-gnews" class="text-xs text-slate-400 ml-1"></span></span>
+                                </label>
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- Sort By -->
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Sort
-                            By</label>
-                        <select id="sortByInput"
-                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
-                            <option value="popularity" selected>Popularity</option>
-                            <option value="publishedAt">Newest</option>
-                            <option value="relevancy">Relevancy</option>
-                        </select>
-                    </div>
-
-                    <!-- Language -->
-                    <div>
-                        <label
-                            class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Language</label>
-                        <select id="languageInput"
-                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
-                            <option value="">All Languages</option>
-                            <option value="en" selected>English</option>
-                            <option value="es">Spanish</option>
-                            <option value="fr">French</option>
-                            <option value="de">German</option>
-                            <option value="it">Italian</option>
-                            <option value="pt">Portuguese</option>
-                            <option value="ru">Russian</option>
-                            <option value="zh">Chinese</option>
-                            <option value="ar">Arabic</option>
-                            <option value="nl">Dutch</option>
-                            <option value="he">Hebrew</option>
-                            <option value="no">Norwegian</option>
-                            <option value="sv">Swedish</option>
-                        </select>
-                    </div>
-
-                    <!-- Page Size -->
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Results
-                            Per Page</label>
-                        <select id="pageSizeInput"
-                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none bg-white">
-                            <option value="10">10</option>
-                            <option value="20">20</option>
-                            <option value="50">50</option>
-                            <option value="100">100</option>
-                        </select>
-                    </div>
-
-                    <!-- Date From -->
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">From
-                            Date</label>
-                        <input type="date" id="fromInput"
-                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-slate-600">
-                    </div>
-
-                    <!-- Date To -->
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">To
-                            Date</label>
-                        <input type="date" id="toInput"
-                            class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none text-slate-600">
-                    </div>
-
-                    <!-- Search In -->
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Search
-                            In</label>
-                        <div class="flex gap-3 mt-2">
-                            <label class="inline-flex items-center cursor-pointer">
-                                <input type="checkbox" class="form-checkbox text-emerald-600 rounded w-4 h-4"
-                                    name="searchIn" value="title" checked>
-                                <span class="ml-2 text-sm text-slate-700">Title</span>
-                            </label>
-                            <label class="inline-flex items-center cursor-pointer">
-                                <input type="checkbox" class="form-checkbox text-emerald-600 rounded w-4 h-4"
-                                    name="searchIn" value="description" checked>
-                                <span class="ml-2 text-sm text-slate-700">Desc</span>
-                            </label>
-                            <label class="inline-flex items-center cursor-pointer">
-                                <input type="checkbox" class="form-checkbox text-emerald-600 rounded w-4 h-4"
-                                    name="searchIn" value="content" checked>
-                                <span class="ml-2 text-sm text-slate-700">Content</span>
-                            </label>
+                        <!-- Sort & Language -->
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Sort
+                                    By</label>
+                                <div class="relative">
+                                    <select id="sortByInput"
+                                        class="w-full pl-3 pr-10 py-2.5 bg-slate-50 border-none rounded-lg text-sm font-medium text-slate-700 focus:ring-2 focus:ring-indigo-500 cursor-pointer hover:bg-slate-100 transition-colors appearance-none">
+                                        <option value="popularity" selected>Popularity</option>
+                                        <option value="publishedAt">Newest</option>
+                                        <option value="relevancy">Relevancy</option>
+                                    </select>
+                                    <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 9l-7 7-7-7"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <label
+                                    class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Language</label>
+                                <div class="relative">
+                                    <select id="languageInput"
+                                        class="w-full pl-3 pr-10 py-2.5 bg-slate-50 border-none rounded-lg text-sm font-medium text-slate-700 focus:ring-2 focus:ring-indigo-500 cursor-pointer hover:bg-slate-100 transition-colors appearance-none">
+                                        <option value="">All Languages</option>
+                                        <option value="en" selected>English</option>
+                                        <option value="es">Spanish</option>
+                                        <option value="fr">French</option>
+                                        <option value="de">German</option>
+                                    </select>
+                                    <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+                                        <svg class="w-4 h-4 text-slate-500" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M19 9l-7 7-7-7"></path>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
 
-                    <!-- Domains -->
-                    <div class="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <label
-                                class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Specific
-                                Domains (comma separated)</label>
-                            <input type="text" id="domainsInput" placeholder="e.g. techcrunch.com, bbc.co.uk"
-                                class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+                        <!-- Dates & Options -->
+                        <div class="space-y-4">
+                            <div class="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label
+                                        class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">From</label>
+                                    <input type="date" id="fromInput"
+                                        class="w-full px-3 py-2.5 bg-slate-50 border-none rounded-lg text-sm text-slate-600 focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                                <div>
+                                    <label
+                                        class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">To</label>
+                                    <input type="date" id="toInput"
+                                        class="w-full px-3 py-2.5 bg-slate-50 border-none rounded-lg text-sm text-slate-600 focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                            </div>
+
+                            <div>
+                                <label
+                                    class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Search
+                                    In</label>
+                                <div class="flex gap-4">
+                                    <label class="inline-flex items-center cursor-pointer">
+                                        <input type="checkbox"
+                                            class="form-checkbox text-indigo-600 rounded w-4 h-4 border-slate-300"
+                                            name="searchIn" value="title" checked>
+                                        <span class="ml-2 text-sm text-slate-600">Title</span>
+                                    </label>
+                                    <label class="inline-flex items-center cursor-pointer">
+                                        <input type="checkbox"
+                                            class="form-checkbox text-indigo-600 rounded w-4 h-4 border-slate-300"
+                                            name="searchIn" value="description" checked>
+                                        <span class="ml-2 text-sm text-slate-600">Desc</span>
+                                    </label>
+                                </div>
+                            </div>
                         </div>
-                        <div>
-                            <label
-                                class="block text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Exclude
-                                Domains (comma separated)</label>
-                            <input type="text" id="excludeDomainsInput" placeholder="e.g. foxnews.com"
-                                class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-emerald-500 outline-none">
+
+                        <!-- Domains (Full Width) -->
+                        <div class="md:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-50">
+                            <div>
+                                <input type="text" id="domainsInput"
+                                    placeholder="Specific Domains (e.g. techcrunch.com)"
+                                    class="w-full px-4 py-2.5 bg-slate-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                            </div>
+                            <div>
+                                <input type="text" id="excludeDomainsInput"
+                                    placeholder="Exclude Domains (e.g. foxnews.com)"
+                                    class="w-full px-4 py-2.5 bg-slate-50 border-none rounded-lg text-sm focus:ring-2 focus:ring-indigo-500 outline-none">
+                            </div>
+                            <!-- Hidden Page Size for now to clean UI, default to 20 -->
+                            <select id="pageSizeInput" class="hidden">
+                                <option value="20" selected>20</option>
+                            </select>
                         </div>
                     </div>
                 </div>
-            </form>
+            </div>
 
             <!-- Error Message -->
             <div id="errorMessage"
-                class="hidden mt-4 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm"></div>
+                class="hidden mt-6 mx-4 p-4 bg-red-50 border border-red-100 rounded-xl text-red-600 text-sm text-center font-medium">
+            </div>
         </div>
 
         <!-- Selection Toolbar (Sticky) -->
         <div id="selectionToolbar"
-            class="hidden sticky top-4 z-40 bg-white rounded-xl shadow-lg border border-emerald-200 p-4 mb-8 flex justify-between items-center animate-fade-in">
-            <div class="flex items-center gap-3">
-                <span class="bg-emerald-100 text-emerald-700 font-bold px-3 py-1 rounded-full text-sm"
+            class="hidden sticky top-6 z-40 bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl shadow-indigo-500/10 border border-indigo-100 p-4 mb-12 flex justify-between items-center animate-fade-in max-w-2xl mx-auto">
+            <div class="flex items-center gap-4">
+                <span class="bg-indigo-600 text-white font-bold px-3 py-1 rounded-full text-sm shadow-sm"
                     id="selectionCount">0</span>
                 <span class="text-slate-700 font-medium">articles selected</span>
             </div>
             <div class="flex gap-3">
                 <button id="cancelSelectionBtn"
-                    class="text-slate-500 hover:text-slate-700 font-medium px-4 py-2 transition-colors">
+                    class="text-slate-500 hover:text-slate-800 font-medium px-4 py-2 transition-colors hover:bg-slate-100 rounded-lg">
                     Cancel
                 </button>
                 <button id="generateDigestBtn"
-                    class="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold px-6 py-2 rounded-lg transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed">
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-6 py-2 rounded-xl transition-all shadow-lg shadow-indigo-200 hover:shadow-indigo-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none">
                     Generate Digest
                 </button>
             </div>
         </div>
 
         <!-- Action Bar -->
-        <div id="actionBar" class="flex justify-between items-center mb-6 hidden">
-            <h2 class="text-xl font-bold text-slate-800">Results</h2>
+        <div id="actionBar" class="flex justify-between items-center mb-8 hidden animate-fade-in">
+            <h2 class="text-3xl font-bold text-slate-900 tracking-tight">Top Stories</h2>
             <button id="startSelectionBtn"
-                class="text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 font-medium px-4 py-2 rounded-lg transition-colors flex items-center gap-2 border border-emerald-200">
-                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
-                    stroke="currentColor">
+                class="group text-indigo-600 hover:bg-indigo-50 hover:text-indigo-700 font-semibold px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 border border-indigo-100 hover:border-indigo-200 shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 group-hover:scale-110 transition-transform"
+                    fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                 </svg>
@@ -306,33 +334,42 @@
         </div>
 
         <!-- Loading State -->
-        <div id="loadingIndicator" class="hidden py-12 flex justify-center items-center">
-            <div class="loader"></div>
-            <span class="ml-3 text-slate-500 font-medium">Fetching latest stories...</span>
+        <div id="loadingIndicator" class="hidden py-20 flex flex-col justify-center items-center gap-4">
+            <div class="loader w-10 h-10 border-4"></div>
+            <span class="text-slate-400 font-medium animate-pulse">Curating your feed...</span>
         </div>
 
         <!-- Results Grid -->
-        <div id="resultsGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12 hidden">
+        <div id="resultsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16 hidden">
             <!-- Cards will be injected here -->
         </div>
 
         <!-- Digest Section -->
-        <div id="digestSection" class="hidden bg-white rounded-xl shadow-lg border border-slate-200 overflow-hidden">
-            <div class="p-6 border-b border-slate-100 bg-slate-50 flex justify-between items-center flex-wrap gap-4">
-                <h3 class="text-lg font-bold text-slate-800">Email Digest Preview</h3>
+        <div id="digestSection"
+            class="hidden bg-white rounded-3xl shadow-xl border border-slate-100 overflow-hidden mb-16 animate-fade-in">
+            <div
+                class="p-6 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center flex-wrap gap-4 backdrop-blur-sm">
+                <h3 class="text-xl font-bold text-slate-800 flex items-center gap-2">
+                    <svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10a2 2 0 012 2v1m2 13a2 2 0 01-2-2V7m2 13a2 2 0 002-2V9a2 2 0 00-2-2h-2m-4-3H9M7 16h6M7 8h6v4H7V8z">
+                        </path>
+                    </svg>
+                    Digest Preview
+                </h3>
                 <button id="copyDigestBtn"
-                    class="bg-emerald-600 hover:bg-emerald-700 text-white font-medium px-4 py-2 rounded-lg transition-colors shadow-sm flex items-center gap-2 text-sm">
+                    class="bg-slate-900 hover:bg-slate-800 text-white font-medium px-5 py-2.5 rounded-xl transition-all shadow-lg shadow-slate-200 hover:shadow-slate-300 flex items-center gap-2 text-sm">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24"
                         stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
                     </svg>
-                    Generate & Copy to Clipboard
+                    Copy to Clipboard
                 </button>
             </div>
-            <div class="p-6 bg-slate-50">
+            <div class="p-0">
                 <div id="digestContent"
-                    class="digest-box w-full h-96 p-4 bg-white border border-slate-300 rounded-lg font-mono text-sm text-slate-700 whitespace-pre-wrap overflow-y-auto shadow-inner">
+                    class="digest-box w-full h-[500px] p-8 bg-white font-mono text-sm text-slate-600 whitespace-pre-wrap overflow-y-auto leading-relaxed">
                 </div>
             </div>
         </div>
@@ -341,8 +378,11 @@
 
     <!-- Toast Notification -->
     <div id="toast"
-        class="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-slate-800 text-white px-6 py-3 rounded-full shadow-lg opacity-0 transition-opacity duration-300 pointer-events-none z-50">
-        Copied to clipboard!
+        class="fixed bottom-8 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-8 py-4 rounded-2xl shadow-2xl opacity-0 transition-all duration-300 pointer-events-none z-50 flex items-center gap-3 translate-y-4">
+        <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+        </svg>
+        <span class="font-medium">Copied to clipboard!</span>
     </div>
 
     <script>
@@ -869,7 +909,7 @@
                 regex = new RegExp(pattern, 'gi');
             }
 
-            return text.replace(regex, '<mark class="bg-yellow-200 rounded-sm px-0.5">$1</mark>');
+            return text.replace(regex, '<mark class="bg-indigo-100 text-indigo-900 rounded-sm px-0.5 font-medium">$1</mark>');
         }
 
         function getSnippet(content, query) {
@@ -949,7 +989,7 @@
                 const date = new Date(article.publishedAt).toLocaleDateString('en-US', {
                     month: 'short', day: 'numeric', year: 'numeric'
                 });
-                const image = article.urlToImage || 'https://placehold.co/400x200?text=No+Image';
+                const image = article.urlToImage || 'https://placehold.co/600x400/f1f5f9/94a3b8?text=No+Image';
 
                 // Apply highlighting
                 const titleHtml = highlightText(article.title, currentQuery);
@@ -960,8 +1000,8 @@
                 if (article.content) {
                     const snippet = getSnippet(article.content, currentQuery);
                     if (snippet) {
-                        contentSnippetHtml = `<div class="mt-3 p-2 bg-slate-50 border border-slate-100 rounded text-xs text-slate-500 font-mono">
-                            <span class="font-semibold text-slate-400 uppercase tracking-wider text-[10px] mr-1">Match in content:</span>
+                        contentSnippetHtml = `<div class="mt-4 p-3 bg-slate-50 rounded-lg text-xs text-slate-500 font-mono border border-slate-100">
+                            <span class="font-bold text-indigo-400 uppercase tracking-wider text-[10px] mr-2">Match:</span>
                             ${snippet}
                         </div>`;
                     }
@@ -969,41 +1009,57 @@
 
                 const isSelected = selectedArticleIndices.has(index);
                 const selectionOverlay = isSelectionMode ? `
-                    <div class="absolute top-3 right-3 z-10">
-                        <input type="checkbox" id="checkbox-${index}" class="w-6 h-6 rounded border-gray-300 text-blue-600 focus:ring-blue-500 transition-all cursor-pointer shadow-sm selection-checkbox" ${isSelected ? 'checked' : ''}>
+                    <div class="absolute top-4 right-4 z-20">
+                        <input type="checkbox" id="checkbox-${index}" class="w-6 h-6 rounded-md border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-all cursor-pointer shadow-sm selection-checkbox" ${isSelected ? 'checked' : ''}>
                     </div>
-                    <div class="absolute inset-0 bg-blue-500/10 pointer-events-none transition-opacity ${isSelected ? 'opacity-100' : 'opacity-0'}" id="overlay-${index}"></div>
+                    <div class="absolute inset-0 bg-indigo-500/5 backdrop-blur-[1px] pointer-events-none transition-opacity duration-300 ${isSelected ? 'opacity-100' : 'opacity-0'}" id="overlay-${index}"></div>
                 ` : '';
 
                 const clickHandler = isSelectionMode ? `onclick="toggleArticleSelection(${index})"` : '';
 
+                // Source Badge Color
+                const sourceColorClass = article.apiSource === 'newsdata' ? 'bg-orange-100 text-orange-700' :
+                    (article.apiSource === 'gnews' ? 'bg-blue-100 text-blue-700' : 'bg-emerald-100 text-emerald-700');
+
                 return `
-                    <article id="article-${index}" class="article-card bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden card-hover flex flex-col h-full relative ${isSelected ? 'selected' : ''}" ${clickHandler}>
+                    <article id="article-${index}" class="article-card group bg-white rounded-3xl shadow-sm hover:shadow-xl hover:shadow-slate-200/50 transition-all duration-300 overflow-hidden flex flex-col h-full relative border border-slate-100 ${isSelected ? 'selected' : ''}" ${clickHandler}>
                         ${selectionOverlay}
-                        <div class="h-48 overflow-hidden relative bg-slate-200">
-                             <img src="${image}" alt="${article.title}" class="w-full h-full object-cover" onerror="this.onerror=null;this.src='https://placehold.co/400x200?text=No+Image'">
-                             <div class="absolute bottom-0 left-0 bg-gradient-to-t from-black/70 to-transparent w-full p-4 flex gap-2">
-                                <span class="text-white text-xs font-bold uppercase tracking-wider bg-blue-600 px-2 py-1 rounded-sm">${article.source.name || 'Unknown Source'}</span>
-                                <span class="text-white text-xs font-bold uppercase tracking-wider bg-slate-700 px-2 py-1 rounded-sm border border-slate-500">${article.apiSource === 'newsdata' ? 'NewsData' : (article.apiSource === 'gnews' ? 'GNews' : 'NewsAPI')}</span>
+                        <div class="h-56 overflow-hidden relative bg-slate-100">
+                             <img src="${image}" alt="${article.title}" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700" onerror="this.onerror=null;this.src='https://placehold.co/600x400/f1f5f9/94a3b8?text=No+Image'">
+                             <div class="absolute top-4 left-4 flex gap-2">
+                                <span class="bg-white/90 backdrop-blur-sm text-slate-700 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm border border-white/50">
+                                    ${article.source.name || 'Unknown Source'}
+                                </span>
                              </div>
                         </div>
-                        <div class="p-5 flex-1 flex flex-col">
-                            <div class="text-xs text-slate-500 mb-2 font-medium">${date}</div>
-                            <h3 class="text-lg font-bold text-slate-900 mb-2 leading-tight">
-                                <a href="${article.url}" target="_blank" class="hover:text-blue-600 transition-colors ${isSelectionMode ? 'pointer-events-none' : ''}">
+                        <div class="p-6 flex-1 flex flex-col">
+                            <div class="flex justify-between items-center mb-3">
+                                <span class="text-xs font-medium text-slate-400">${date}</span>
+                                <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${sourceColorClass}">
+                                    ${article.apiSource === 'newsdata' ? 'NewsData' : (article.apiSource === 'gnews' ? 'GNews' : 'NewsAPI')}
+                                </span>
+                            </div>
+                            
+                            <h3 class="text-xl font-bold text-slate-900 mb-3 leading-tight group-hover:text-indigo-600 transition-colors">
+                                <a href="${article.url}" target="_blank" class="focus:outline-none ${isSelectionMode ? 'pointer-events-none' : ''}">
                                     ${titleHtml}
                                 </a>
                             </h3>
-                            <p class="text-slate-600 text-sm mb-4 flex-1 line-clamp-3">
+                            
+                            <p class="text-slate-600 text-sm mb-6 flex-1 line-clamp-3 leading-relaxed">
                                 ${descHtml || 'No description available.'}
                             </p>
+                            
                             ${contentSnippetHtml}
-                            <a href="${article.url}" target="_blank" class="text-blue-600 text-sm font-semibold hover:underline mt-auto inline-flex items-center gap-1 pt-4 ${isSelectionMode ? 'pointer-events-none opacity-50' : ''}">
-                                Read full story 
-                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                </svg>
-                            </a>
+                            
+                            <div class="mt-auto pt-4 border-t border-slate-50 flex justify-between items-center">
+                                <a href="${article.url}" target="_blank" class="text-indigo-600 text-sm font-bold hover:text-indigo-700 inline-flex items-center gap-1 group/link ${isSelectionMode ? 'pointer-events-none opacity-50' : ''}">
+                                    Read full story 
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transform group-hover/link:translate-x-1 transition-transform" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                    </svg>
+                                </a>
+                            </div>
                         </div>
                     </article>
                 `;
