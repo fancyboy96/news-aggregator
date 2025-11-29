@@ -359,6 +359,7 @@
         let currentQuery = '';
         let isSelectionMode = false;
         let selectedArticleIndices = new Set();
+        let isSearching = false;
 
         // --- DOM Elements ---
         const els = {
@@ -499,6 +500,11 @@
         }
 
         async function performSearch(query, pushState = true) {
+            if (isSearching) {
+                console.log('Search already in progress, skipping...');
+                return;
+            }
+
             const providers = Array.from(els.providerCheckboxes)
                 .filter(cb => cb.checked)
                 .map(cb => cb.value);
@@ -539,6 +545,7 @@
 
             currentQuery = query;
             setLoading(true);
+            isSearching = true;
             setError(null);
             els.resultsGrid.classList.add('hidden');
             els.digestSection.classList.add('hidden');
@@ -605,12 +612,14 @@
                 setError(err.message || 'An unexpected error occurred. Please try again.');
             } finally {
                 setLoading(false);
+                isSearching = false;
             }
         }
 
         function mergeResults(resultsArrays) {
             // Flatten array of arrays
             let merged = resultsArrays.flat();
+            console.log('Merged raw results:', merged.length);
 
             // Remove duplicates (by URL or Title)
             const seen = new Set();
@@ -620,6 +629,7 @@
                 seen.add(key);
                 return true;
             });
+            console.log('Deduped results:', merged.length);
 
             // Sort by Date (Newest first)
             // Note: Relevancy scores are not comparable across APIs, so date is the safest default.
@@ -904,6 +914,7 @@
         }
 
         function renderResults(articles) {
+            console.log('Rendering articles:', articles.length);
             els.resultsGrid.innerHTML = articles.map((article, index) => {
                 const date = new Date(article.publishedAt).toLocaleDateString('en-US', {
                     month: 'short', day: 'numeric', year: 'numeric'
