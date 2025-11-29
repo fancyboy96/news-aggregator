@@ -70,6 +70,28 @@ export default defineConfig(({ mode }) => {
                             headers: { 'User-Agent': 'NewsAggregator/1.0' }
                         });
 
+                        // --- Server-Side Logging for API Usage (Local) ---
+                        const usageHeaders = {};
+                        const headerKeys = [
+                            'x-ratelimit-remaining',
+                            'x-ratelimit-limit',
+                            'x-quota-remaining',
+                            'x-quota-limit',
+                            'x-usagelimit-remaining',
+                            'x-usagelimit-limit'
+                        ];
+
+                        headerKeys.forEach(key => {
+                            if (response.headers.has(key)) {
+                                usageHeaders[key] = response.headers.get(key);
+                            }
+                        });
+
+                        if (Object.keys(usageHeaders).length > 0) {
+                            console.log(`[API Usage] Provider: ${provider}`, JSON.stringify(usageHeaders));
+                        }
+                        // -----------------------------------------
+
                         const data = await response.json();
                         res.setHeader('Content-Type', 'application/json');
                         res.end(JSON.stringify(data));
