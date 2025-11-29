@@ -756,11 +756,19 @@
                 params.append('in', searchIn.join(','));
             }
 
+            console.log('Fetching GNews with params:', params.toString());
+
             const data = await fetchWithRetry(`${url}?${params.toString()}`);
 
+            console.log('GNews Raw Response:', data);
+
+            if (data.errors) {
+                const msg = Array.isArray(data.errors) ? data.errors[0] : 'GNews API Error';
+                throw new Error(msg);
+            }
+
             if (data.status === 'error') {
-                // GNews errors usually come as { errors: ["message"] } or just status error
-                const msg = data.errors ? data.errors[0] : (data.message || 'API Error');
+                const msg = data.message || 'API Error';
                 throw new Error(msg);
             }
 
@@ -769,7 +777,7 @@
                 status: 'ok',
                 totalResults: data.totalArticles,
                 articles: (data.articles || []).map(item => ({
-                    source: { name: item.source.name || 'GNews' },
+                    source: { name: (item.source && item.source.name) || 'GNews' },
                     author: null, // GNews doesn't always provide author in the same way
                     title: item.title,
                     description: item.description,
