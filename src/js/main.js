@@ -1,5 +1,6 @@
 import '../css/style.css';
 import { inject } from '@vercel/analytics';
+import { store } from './store.js';
 import {
     els,
     initTheme,
@@ -12,9 +13,7 @@ import {
     updateSelectionUI
 } from './ui.js';
 import {
-    fetchNewsApi,
-    fetchNewsData,
-    fetchGNews
+    fetchNews
 } from './api.js';
 import {
     generateDigestText,
@@ -24,14 +23,6 @@ import {
 
 // Initialize Analytics
 inject();
-
-// State
-let currentArticles = [];
-let currentQuery = '';
-let isSelectionMode = false;
-let selectedArticleIndices = new Set();
-let isSearching = false;
-let currentPage = 1;
 
 // Make shareArticle globally available for onclick handlers in HTML
 window.shareArticle = shareArticle;
@@ -99,12 +90,17 @@ els.searchForm.addEventListener('submit', (e) => {
 });
 
 els.copyDigestBtn.addEventListener('click', () => {
+    const state = store.get('articles'); // Get all articles
+    const selectedIndices = store.get('selectedArticleIndices');
+    const isSelectionMode = store.get('isSelectionMode');
+    const query = store.get('query');
+
     const articlesToDigest = isSelectionMode
-        ? currentArticles.filter((_, idx) => selectedArticleIndices.has(idx))
-        : currentArticles;
+        ? state.filter((_, idx) => selectedIndices.has(idx))
+        : state;
 
     if (articlesToDigest.length > 0) {
-        const digestText = generateDigestText(articlesToDigest, currentQuery);
+        const digestText = generateDigestText(articlesToDigest, query);
         copyToClipboard(digestText);
     }
 });
@@ -119,9 +115,13 @@ els.cancelSelectionBtn.addEventListener('click', () => {
 });
 
 els.generateDigestBtn.addEventListener('click', () => {
-    const selected = currentArticles.filter((_, idx) => selectedArticleIndices.has(idx));
+    const state = store.get('articles');
+    const selectedIndices = store.get('selectedArticleIndices');
+    const query = store.get('query');
+
+    const selected = state.filter((_, idx) => selectedIndices.has(idx));
     if (selected.length > 0) {
-        const digestText = generateDigestText(selected, currentQuery);
+        const digestText = generateDigestText(selected, query);
         els.digestContent.textContent = digestText;
         els.digestSection.classList.remove('hidden');
         // Scroll to digest
@@ -132,8 +132,6 @@ els.generateDigestBtn.addEventListener('click', () => {
 els.themeToggleBtn.addEventListener('click', toggleTheme);
 
 if (els.loadMoreContainer) {
-    // We need to attach the listener dynamically since the button might be hidden/shown
-    // But actually, the button is static in HTML, just hidden.
     const btn = document.getElementById('loadMoreBtn');
     if (btn) {
         btn.addEventListener('click', loadMoreArticles);
@@ -143,7 +141,7 @@ if (els.loadMoreContainer) {
 // --- Core Functions ---
 
 async function performSearch(query, pushState = true, isLoadMore = false) {
-    if (isSearching) {
+    if (store.get('isSearching')) {
         console.log('Search already in progress, skipping...');
         return;
     }
@@ -166,17 +164,15 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
         const params = new URLSearchParams();
         params.set('q', query);
         params.set('provider', providers.join(','));
-        // ... (rest of params could be added here if needed for full state restoration)
         const newUrl = `${window.location.pathname}?${params.toString()}`;
         window.history.pushState({ path: newUrl }, '', newUrl);
     }
 
-    currentQuery = query;
-    isSearching = true;
+    store.set({ query, isSearching: true });
     setError(null);
 
     if (!isLoadMore) {
-        currentPage = 1;
+        store.set({ currentPage: 1 });
         els.resultsGrid.classList.add('hidden');
         els.digestSection.classList.add('hidden');
         els.actionBar.classList.add('hidden');
@@ -199,35 +195,40 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
     if (!isLoadMore) setLoading(true);
 
     try {
+        const currentPage = store.get('currentPage');
+
+        // Gather common options
+        const options = {
+            page: currentPage,
+            sortBy: els.sortByInput.value,
+            language: els.languageInput.value,
+            pageSize: els.pageSizeInput.value,
+            from: els.fromInput.value,
+            to: els.toInput.value,
+            domains: els.domainsInput.value.trim(),
+            excludeDomains: els.excludeDomainsInput.value.trim(),
+            searchIn: Array.from(document.querySelectorAll('input[name="searchIn"]:checked'))
+                .map(cb => cb.value)
+                .join(','),
+            isLoadMore
+        };
+
         // Fetch from all selected providers in parallel
-        const promises = providers.map(async provider => {
+        const promises = providers.map(async providerName => {
             try {
-                let data;
-                if (provider === 'newsdata') {
-                    // NewsData doesn't support simple page number pagination easily in this proxy setup without cursor storage
-                    if (isLoadMore) return []; // Skip NewsData on load more for MVP
-                    data = await fetchNewsData(query);
-                } else if (provider === 'gnews') {
-                    data = await fetchGNews(query, currentPage);
-                } else {
-                    data = await fetchNewsApi(query, currentPage);
-                }
+                const data = await fetchNews(providerName, query, options);
 
                 // Update total count (only on first page)
                 if (!isLoadMore) {
-                    const countEl = document.getElementById(`count-${provider}`);
+                    const countEl = document.getElementById(`count-${providerName}`);
                     if (countEl && data.totalResults !== undefined) {
                         countEl.textContent = `(${data.totalResults})`;
                     }
                 }
 
-                // Tag articles
-                if (data.articles) {
-                    data.articles.forEach(a => a.apiSource = provider);
-                }
                 return data.articles || [];
             } catch (err) {
-                console.error(`Failed to fetch from ${provider}:`, err);
+                console.error(`Failed to fetch from ${providerName}:`, err);
                 return [];
             }
         });
@@ -237,11 +238,12 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
 
         if (newArticles.length > 0) {
             if (isLoadMore) {
-                currentArticles = [...currentArticles, ...newArticles];
-                appendResults(newArticles, currentArticles.length - newArticles.length, currentQuery, isSelectionMode, selectedArticleIndices);
+                const currentArticles = store.get('articles');
+                store.set({ articles: [...currentArticles, ...newArticles] });
+                appendResults(newArticles, currentArticles.length, store.get('query'), store.get('isSelectionMode'), store.get('selectedArticleIndices'));
             } else {
-                currentArticles = newArticles;
-                renderResults(newArticles, currentQuery, isSelectionMode, selectedArticleIndices);
+                store.set({ articles: newArticles });
+                renderResults(newArticles, store.get('query'), store.get('isSelectionMode'), store.get('selectedArticleIndices'));
             }
 
             els.resultsGrid.classList.remove('hidden');
@@ -262,7 +264,7 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
         if (!isLoadMore) setError(err.message || 'An unexpected error occurred.');
     } finally {
         setLoading(false);
-        isSearching = false;
+        store.set({ isSearching: false });
 
         // Reset Load More Button
         if (isLoadMore) {
@@ -277,8 +279,9 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
 }
 
 function loadMoreArticles() {
-    currentPage++;
-    performSearch(currentQuery, false, true);
+    const nextPage = store.get('currentPage') + 1;
+    store.set({ currentPage: nextPage });
+    performSearch(store.get('query'), false, true);
 }
 
 function mergeResults(resultsArrays) {
@@ -331,8 +334,8 @@ function mergeResults(resultsArrays) {
 }
 
 function setSelectionMode(active) {
-    isSelectionMode = active;
-    selectedArticleIndices.clear();
+    store.set({ isSelectionMode: active });
+    store.clearSelection();
     updateSelectionUI(0);
 
     if (active) {
@@ -347,24 +350,21 @@ function setSelectionMode(active) {
         document.body.classList.remove('selection-mode');
     }
     // Re-render to show/hide checkboxes
-    renderResults(currentArticles, currentQuery, isSelectionMode, selectedArticleIndices);
+    renderResults(store.get('articles'), store.get('query'), active, store.get('selectedArticleIndices'));
 }
 
 function toggleArticleSelection(index) {
-    if (!isSelectionMode) return;
+    if (!store.get('isSelectionMode')) return;
 
-    if (selectedArticleIndices.has(index)) {
-        selectedArticleIndices.delete(index);
-    } else {
-        selectedArticleIndices.add(index);
-    }
-    updateSelectionUI(selectedArticleIndices.size);
+    store.toggleSelection(index);
+    const selectedIndices = store.get('selectedArticleIndices');
+    updateSelectionUI(selectedIndices.size);
 
     // Update specific card UI without full re-render
     const card = document.getElementById(`article-${index}`);
     const checkbox = document.getElementById(`checkbox-${index}`);
     if (card && checkbox) {
-        if (selectedArticleIndices.has(index)) {
+        if (selectedIndices.has(index)) {
             card.classList.add('selected');
             checkbox.checked = true;
         } else {

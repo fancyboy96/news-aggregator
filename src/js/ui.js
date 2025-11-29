@@ -78,11 +78,45 @@ export function initTheme() {
 
 export function setLoading(isLoading) {
     if (isLoading) {
+        // Render Skeleton Grid
+        els.loadingIndicator.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 w-full animate-fade-in">
+                ${Array(6).fill(0).map(() => `
+                    <div class="bg-white dark:bg-slate-800 rounded-3xl shadow-sm border border-slate-100 dark:border-slate-700 overflow-hidden h-full flex flex-col">
+                        <div class="h-56 bg-slate-200 dark:bg-slate-700 animate-pulse"></div>
+                        <div class="p-6 flex-1 flex flex-col space-y-4">
+                            <div class="flex justify-between">
+                                <div class="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/4 animate-pulse"></div>
+                                <div class="h-3 bg-slate-200 dark:bg-slate-700 rounded w-1/5 animate-pulse"></div>
+                            </div>
+                            <div class="space-y-2">
+                                <div class="h-6 bg-slate-200 dark:bg-slate-700 rounded w-full animate-pulse"></div>
+                                <div class="h-6 bg-slate-200 dark:bg-slate-700 rounded w-3/4 animate-pulse"></div>
+                            </div>
+                            <div class="space-y-2 pt-2">
+                                <div class="h-3 bg-slate-200 dark:bg-slate-700 rounded w-full animate-pulse"></div>
+                                <div class="h-3 bg-slate-200 dark:bg-slate-700 rounded w-full animate-pulse"></div>
+                                <div class="h-3 bg-slate-200 dark:bg-slate-700 rounded w-2/3 animate-pulse"></div>
+                            </div>
+                            <div class="mt-auto pt-4 flex justify-between items-center border-t border-slate-50 dark:border-slate-700">
+                                <div class="h-4 bg-slate-200 dark:bg-slate-700 rounded w-1/3 animate-pulse"></div>
+                                <div class="h-8 w-8 bg-slate-200 dark:bg-slate-700 rounded-full animate-pulse"></div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
         els.loadingIndicator.classList.remove('hidden');
+        els.loadingIndicator.classList.remove('py-20', 'flex', 'flex-col', 'justify-center', 'items-center', 'gap-4'); // Remove centering styles for grid
+
         els.searchBtn.disabled = true;
         els.searchBtn.innerHTML = '<div class="loader" style="width:16px;height:16px;border-width:2px;"></div> Searching...';
     } else {
         els.loadingIndicator.classList.add('hidden');
+        // Reset container styles for next time (though we overwrite innerHTML anyway)
+        els.loadingIndicator.classList.add('py-20', 'flex', 'flex-col', 'justify-center', 'items-center', 'gap-4');
+
         els.searchBtn.disabled = false;
         els.searchBtn.innerHTML = '<span>Search</span>';
     }
