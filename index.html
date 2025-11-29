@@ -661,18 +661,43 @@
             let merged = resultsArrays.flat();
             console.log('Merged raw results:', merged.length);
 
-            // Remove duplicates (by URL or Title)
+            // Remove duplicates (by Normalized URL or Title)
             const seen = new Set();
             merged = merged.filter(article => {
-                const key = article.url || article.title;
-                if (seen.has(key)) return false;
-                seen.add(key);
+                if (!article.url && !article.title) return false;
+
+                // Normalize URL: remove query parameters and trailing slashes
+                let urlKey = '';
+                if (article.url) {
+                    try {
+                        const urlObj = new URL(article.url);
+                        urlKey = urlObj.origin + urlObj.pathname;
+                        // Remove trailing slash
+                        if (urlKey.endsWith('/')) urlKey = urlKey.slice(0, -1);
+                    } catch (e) {
+                        urlKey = article.url;
+                    }
+                }
+
+                // Normalize Title: lowercase, remove special chars
+                const titleKey = article.title ? article.title.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
+
+                // Check if we've seen this article
+                // We prefer URL matching, but fallback to title if URL is missing or generic
+                const key = urlKey || titleKey;
+
+                // Also check titleKey specifically if we have one, to catch same article with different URLs
+                if (titleKey && seen.has(titleKey)) return false;
+                if (urlKey && seen.has(urlKey)) return false;
+
+                if (urlKey) seen.add(urlKey);
+                if (titleKey) seen.add(titleKey);
+
                 return true;
             });
             console.log('Deduped results:', merged.length);
 
             // Sort by Date (Newest first)
-            // Note: Relevancy scores are not comparable across APIs, so date is the safest default.
             merged.sort((a, b) => {
                 return new Date(b.publishedAt) - new Date(a.publishedAt);
             });
@@ -895,6 +920,7 @@
                 const phrase = query.slice(1, -1);
                 if (!phrase) return text;
                 const safePhrase = phrase.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+                // Use word boundaries if the phrase starts/ends with word characters
                 regex = new RegExp(`(${safePhrase})`, 'gi');
             } else {
                 // Multi-word matching: split into words
@@ -905,11 +931,22 @@
                 const safeWords = words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
                     .sort((a, b) => b.length - a.length);
 
-                const pattern = `(${safeWords.join('|')})`;
-                regex = new RegExp(pattern, 'gi');
+                // Use word boundaries (\b) to prevent partial matches like 'ey' in 'Valley'
+                // We wrap each word in \b...\b, but we need to be careful with non-word chars.
+                // If a search term contains non-word chars (e.g. "C++"), \b might not work as expected.
+                // For simple alphanumeric queries, \b is best.
+
+                const pattern = safeWords.map(w => {
+                    // Check if word starts/ends with alphanumeric
+                    const start = /^\w/.test(w) ? '\\b' : '';
+                    const end = /\w$/.test(w) ? '\\b' : '';
+                    return `${start}${w}${end}`;
+                }).join('|');
+
+                regex = new RegExp(`(${pattern})`, 'gi');
             }
 
-            return text.replace(regex, '<mark class="bg-indigo-100 text-indigo-900 rounded-sm px-0.5 font-medium">$1</mark>');
+            return text.replace(regex, '<mark class="bg-indigo-100 text-indigo-900 rounded-sm px-0.5">$1</mark>');
         }
 
         function getSnippet(content, query) {
