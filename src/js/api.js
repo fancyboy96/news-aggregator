@@ -2,13 +2,15 @@ import { NewsApiProvider } from './adapters/newsapi.js';
 import { NewsDataProvider } from './adapters/newsdata.js';
 import { GNewsProvider } from './adapters/gnews.js';
 import { TheNewsApiProvider } from './adapters/thenewsapi.js';
+import { MarketauxProvider } from './adapters/marketaux.js';
 
 // Initialize providers
 const providers = {
     newsapi: new NewsApiProvider(),
     newsdata: new NewsDataProvider(),
     gnews: new GNewsProvider(),
-    thenewsapi: new TheNewsApiProvider()
+    thenewsapi: new TheNewsApiProvider(),
+    marketaux: new MarketauxProvider()
 };
 
 export async function fetchWithRetry(url, retries = 3, backoff = 300) {

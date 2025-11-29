@@ -195,7 +195,7 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
         els.resultsGrid.innerHTML = ''; // Clear previous results
 
         // Reset counts
-        ['newsapi', 'newsdata', 'gnews', 'thenewsapi'].forEach(p => {
+        ['newsapi', 'newsdata', 'gnews', 'thenewsapi', 'marketaux'].forEach(p => {
             const el = document.getElementById(`count-${p}`);
             if (el) el.textContent = '';
         });

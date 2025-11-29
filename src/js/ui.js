@@ -184,7 +184,8 @@ function generateArticlesHtml(articles, startIndex, query, isSelectionMode, sele
         // Source Badge Color
         const sourceColorClass = article.apiSource === 'newsdata' ? 'bg-orange-100 text-orange-700' :
             (article.apiSource === 'gnews' ? 'bg-blue-100 text-blue-700' :
-                (article.apiSource === 'thenewsapi' ? 'bg-purple-100 text-purple-700' : 'bg-emerald-100 text-emerald-700'));
+                (article.apiSource === 'thenewsapi' ? 'bg-purple-100 text-purple-700' :
+                    (article.apiSource === 'marketaux' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700')));
 
         return `
             <article id="article-${index}" class="article-card group bg-white dark:bg-slate-800 rounded-3xl shadow-sm hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-300 overflow-hidden flex flex-col h-full relative border border-slate-100 dark:border-slate-700 ${isSelected ? 'selected' : ''}" ${clickHandler}>
@@ -201,7 +202,7 @@ function generateArticlesHtml(articles, startIndex, query, isSelectionMode, sele
                     <div class="flex justify-between items-center mb-3">
                         <span class="text-xs font-medium text-slate-400 dark:text-slate-500">${date}</span>
                         <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${sourceColorClass}">
-                            ${article.apiSource === 'newsdata' ? 'NewsData' : (article.apiSource === 'gnews' ? 'GNews' : (article.apiSource === 'thenewsapi' ? 'TheNewsAPI' : 'NewsAPI'))}
+                            ${article.apiSource === 'newsdata' ? 'NewsData' : (article.apiSource === 'gnews' ? 'GNews' : (article.apiSource === 'thenewsapi' ? 'TheNewsAPI' : (article.apiSource === 'marketaux' ? 'Marketaux' : 'NewsAPI')))}
                         </span>
                     </div>
                     

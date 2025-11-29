@@ -45,6 +45,17 @@ export default defineConfig(({ mode }) => {
                                 }
                             });
                             apiUrl.searchParams.append('api_token', apiKey);
+                        } else if (provider === 'marketaux') {
+                            apiKey = env.MARKETAUX_API_TOKEN;
+                            if (!apiKey) throw new Error('Marketaux API Token missing');
+                            apiUrl = new URL('https://api.marketaux.com/v1/news/all');
+                            searchParams.forEach((value, key) => {
+                                if (key !== 'apiKey' && key !== 'provider') {
+                                    if (key === 'q') apiUrl.searchParams.append('search', value);
+                                    else apiUrl.searchParams.append(key, value);
+                                }
+                            });
+                            apiUrl.searchParams.append('api_token', apiKey);
                         } else {
                             apiKey = env.NEWSAPI_KEY;
                             if (!apiKey) throw new Error('NewsAPI Key missing');
