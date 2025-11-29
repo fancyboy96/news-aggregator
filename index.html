@@ -1163,9 +1163,9 @@
                                         <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
                                     </svg>
                                 </a>
-                                <button onclick="shareArticle('${article.url}', event)" class="text-slate-400 hover:text-indigo-600 dark:text-slate-500 dark:hover:text-indigo-400 transition-colors p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 ${isSelectionMode ? 'pointer-events-none opacity-50' : ''}" title="Share Link">
+                                <button onclick="shareArticle('${article.url}', event)" class="text-slate-400 hover:text-indigo-600 dark:text-slate-500 dark:hover:text-indigo-400 transition-colors p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 ${isSelectionMode ? 'pointer-events-none opacity-50' : ''}" title="Copy Link">
                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                                     </svg>
                                 </button>
                             </div>
@@ -1173,6 +1173,39 @@
                     </article>
                 `;
             }).join('');
+        }
+
+        async function shareArticle(url, event) {
+            if (event) {
+                event.stopPropagation();
+                event.preventDefault();
+            }
+
+            try {
+                await navigator.clipboard.writeText(url);
+                showNotification('Link copied to clipboard!');
+            } catch (err) {
+                console.error('Failed to copy: ', err);
+                showNotification('Failed to copy link.', true);
+            }
+        }
+
+        function showNotification(message, isError = false) {
+            // Remove existing toast if any
+            const existingToast = document.getElementById('toast-notification');
+            if (existingToast) existingToast.remove();
+
+            const toast = document.createElement('div');
+            toast.id = 'toast-notification';
+            toast.className = `fixed bottom-8 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full shadow-lg text-white font-medium text-sm z-50 animate-fade-in transition-all duration-300 ${isError ? 'bg-red-500' : 'bg-slate-900 dark:bg-white dark:text-slate-900'}`;
+            toast.textContent = message;
+
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
         }
 
         function generateDigestText(articles, query) {
