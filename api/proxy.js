@@ -145,6 +145,28 @@ export default async function handler(request) {
       }
     });
 
+    // --- Server-Side Logging for API Usage ---
+    const usageHeaders = {};
+    const headerKeys = [
+      'x-ratelimit-remaining',
+      'x-ratelimit-limit',
+      'x-quota-remaining',
+      'x-quota-limit',
+      'x-usagelimit-remaining',
+      'x-usagelimit-limit'
+    ];
+
+    headerKeys.forEach(key => {
+      if (response.headers.has(key)) {
+        usageHeaders[key] = response.headers.get(key);
+      }
+    });
+
+    if (Object.keys(usageHeaders).length > 0) {
+      console.log(`[API Usage] Provider: ${provider}`, JSON.stringify(usageHeaders));
+    }
+    // -----------------------------------------
+
     const data = await response.json();
 
     return new Response(JSON.stringify(data), {

@@ -39,3 +39,9 @@
 ## 10. Source Type Filtering
 **Problem:** Users may want to distinguish between major publishers (CNN, BBC) and independent blogs or press releases.
 **Solution:** Add a "Source Type" filter. NewsData supports "AI Tags", Marketaux supports "Entity Types". Could be normalized across providers.
+
+# Backend / Admin Features
+
+## 11. Automated API Quota Alerting
+**Problem:** If the app becomes popular, we might hit API rate limits unexpectedly, breaking the app for users.
+**Solution:** Implement a backend service (e.g., a scheduled cron job or a check on every Nth request) that monitors API usage headers. If credits drop below a threshold (e.g., 10%), send an email or Slack alert to the admin.
