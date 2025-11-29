@@ -751,7 +751,15 @@
             if (pageSize) params.append('max', pageSize);
 
             // Date formatting if needed. GNews takes "2023-01-01T00:00:00Z"
-            if (from) params.append('from', new Date(from).toISOString());
+            if (from) {
+                params.append('from', new Date(from).toISOString());
+            } else {
+                // GNews Free Plan limit: 1 month. Default to 1 month ago to avoid "historical data" errors with relevance sort.
+                const oneMonthAgo = new Date();
+                oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+                params.append('from', oneMonthAgo.toISOString());
+            }
+
             if (to) params.append('to', new Date(to).toISOString());
 
             // Sort mapping
