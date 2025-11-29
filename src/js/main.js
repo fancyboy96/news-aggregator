@@ -1,6 +1,20 @@
 import '../css/style.css';
 import { inject } from '@vercel/analytics';
+import { registerSW } from 'virtual:pwa-register';
 import { store } from './store.js';
+
+// Register Service Worker
+const updateSW = registerSW({
+    onNeedRefresh() {
+        // Show a toast or banner to the user to reload
+        if (confirm('New content available. Reload?')) {
+            updateSW(true);
+        }
+    },
+    onOfflineReady() {
+        console.log('App is ready to work offline');
+    },
+});
 import {
     els,
     initTheme,
