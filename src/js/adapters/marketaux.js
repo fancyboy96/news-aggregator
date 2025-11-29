@@ -10,6 +10,7 @@ export class MarketauxProvider extends NewsProvider {
         const {
             page = 1,
             language,
+            country, // Marketaux uses 'countries'
             sortBy, // Marketaux doesn't support sorting in free tier easily, but we'll check
             pageSize, // Marketaux uses 'limit'
             domains,
@@ -22,6 +23,7 @@ export class MarketauxProvider extends NewsProvider {
         params.append('provider', 'marketaux');
 
         if (language) params.append('language', language);
+        if (country) params.append('countries', country); // Map country to countries
         if (pageSize) params.append('limit', pageSize);
         if (domains) params.append('domains', domains);
         if (excludeDomains) params.append('exclude_domains', excludeDomains);

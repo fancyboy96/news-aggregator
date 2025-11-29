@@ -10,10 +10,13 @@ export class GNewsProvider extends NewsProvider {
         const {
             page = 1,
             language,
-            sortBy,
-            pageSize,
+            country, // GNews supports 'country'
+            sortBy, // GNews supports 'publishedAt', 'relevance'
+            pageSize, // GNews uses 'max'
             from,
-            to
+            to,
+            domains,
+            excludeDomains
         } = options;
 
         const params = new URLSearchParams();
@@ -21,7 +24,8 @@ export class GNewsProvider extends NewsProvider {
         params.append('page', page);
         params.append('provider', 'gnews');
 
-        if (language) params.append('lang', language);
+        if (language) params.append('lang', language); // GNews uses 'lang'
+        if (country) params.append('country', country);
         if (pageSize) params.append('max', pageSize);
 
         // Date formatting

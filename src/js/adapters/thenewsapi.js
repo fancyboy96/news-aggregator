@@ -10,6 +10,7 @@ export class TheNewsApiProvider extends NewsProvider {
         const {
             page = 1,
             language,
+            country, // TheNewsAPI uses 'locale'
             sortBy,
             pageSize, // TheNewsAPI uses 'limit'
             domains,
@@ -22,6 +23,7 @@ export class TheNewsApiProvider extends NewsProvider {
         params.append('provider', 'thenewsapi');
 
         if (language) params.append('language', language);
+        if (country) params.append('locale', country); // Map country to locale
         if (pageSize) params.append('limit', pageSize);
         if (domains) params.append('domains', domains);
         if (excludeDomains) params.append('exclude_domains', excludeDomains);

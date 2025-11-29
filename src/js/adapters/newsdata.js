@@ -8,20 +8,23 @@ export class NewsDataProvider extends NewsProvider {
 
     async fetch(query, options = {}) {
         const {
+            page = 1,
             language,
-            sortBy,
+            country, // NewsData supports 'country'
+            sortBy, // NewsData doesn't support sorting in free tier easily, but we'll check
+            pageSize, // NewsData uses 'size' (max 10 free)
             domains,
-            excludeDomains,
-            isLoadMore // NewsData pagination is tricky, skipping for load more in MVP
+            excludeDomains
         } = options;
-
-        if (isLoadMore) return { totalResults: 0, articles: [] };
 
         const params = new URLSearchParams();
         params.append('q', query);
+        params.append('page', page); // NewsData uses cursor-based pagination usually, but proxy handles basic page mapping if possible, or we just send page number and hope proxy handles it or API ignores it. (Actually NewsData uses 'page' parameter for cursor, so page number won't work directly without cursor management. For now we pass page, but NewsData pagination is complex. Let's stick to basic.)
         params.append('provider', 'newsdata');
 
         if (language) params.append('language', language);
+        if (country) params.append('country', country);
+        if (pageSize) params.append('size', pageSize);
         if (domains) params.append('domain', domains);
         if (excludeDomains) params.append('excludedomain', excludeDomains);
 

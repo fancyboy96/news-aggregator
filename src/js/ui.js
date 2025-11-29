@@ -10,6 +10,7 @@ export const els = {
     filterPanel: document.getElementById('filterPanel'),
     sortByInput: document.getElementById('sortByInput'),
     languageInput: document.getElementById('languageInput'),
+    countryInput: document.getElementById('countryInput'),
     pageSizeInput: document.getElementById('pageSizeInput'),
     fromInput: document.getElementById('fromInput'),
     toInput: document.getElementById('toInput'),

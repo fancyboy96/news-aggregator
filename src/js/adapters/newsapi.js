@@ -11,6 +11,7 @@ export class NewsApiProvider extends NewsProvider {
             page = 1,
             sortBy,
             language,
+            country, // NewsAPI supports 'country'
             pageSize,
             from,
             to,
@@ -26,6 +27,7 @@ export class NewsApiProvider extends NewsProvider {
 
         if (sortBy) params.append('sortBy', sortBy);
         if (language) params.append('language', language);
+        if (country) params.append('country', country);
         if (pageSize) params.append('pageSize', pageSize);
         if (from) params.append('from', from);
         if (to) params.append('to', to);
