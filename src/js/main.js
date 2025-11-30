@@ -107,6 +107,22 @@ els.toggleFiltersBtn.addEventListener('click', () => {
     els.filterPanel.classList.toggle('hidden');
 });
 
+document.addEventListener('DOMContentLoaded', () => {
+    if (els.browseTopicsBtn) {
+        els.browseTopicsBtn.addEventListener('click', () => {
+            els.quickCategories.classList.toggle('hidden');
+            els.quickCategories.classList.toggle('flex');
+            // Rotate icon
+            const icon = els.browseTopicsBtn.querySelector('svg');
+            if (els.quickCategories.classList.contains('hidden')) {
+                icon.style.transform = 'rotate(0deg)';
+            } else {
+                icon.style.transform = 'rotate(180deg)';
+            }
+        });
+    }
+});
+
 els.searchForm.addEventListener('submit', (e) => {
     e.preventDefault();
     const query = els.searchInput.value.trim();

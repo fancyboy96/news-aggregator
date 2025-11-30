@@ -35,7 +35,9 @@ export const els = {
     selectionCount: document.getElementById('selectionCount'),
     themeToggleBtn: document.getElementById('themeToggleBtn'),
     sunIcon: document.getElementById('sunIcon'),
-    moonIcon: document.getElementById('moonIcon')
+    moonIcon: document.getElementById('moonIcon'),
+    get browseTopicsBtn() { return document.getElementById('browseTopicsBtn'); },
+    get quickCategories() { return document.getElementById('quickCategories'); }
 };
 
 export function updateProviderUI() {
