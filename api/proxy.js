@@ -27,8 +27,13 @@ export default async function handler(request) {
 
     // Forward params
     searchParams.forEach((value, key) => {
-      if (key !== 'apiKey' && key !== 'provider') {
-        apiUrl.searchParams.append(key, value);
+      if (key !== 'apiKey' && key !== 'provider' && value) {
+        // NewsData free tier limit is 10
+        if (key === 'size' && parseInt(value) > 10) {
+          apiUrl.searchParams.append(key, '10');
+        } else {
+          apiUrl.searchParams.append(key, value);
+        }
       }
     });
     // NewsData.io expects 'apikey' (lowercase)
@@ -44,13 +49,16 @@ export default async function handler(request) {
       });
     }
 
-    // https://gnews.io/api/v4/search?q=example&apikey=API_KEY
-    apiUrl = new URL('https://gnews.io/api/v4/search');
+    const q = searchParams.get('q');
+    if (q) {
+      apiUrl = new URL('https://gnews.io/api/v4/search');
+    } else {
+      apiUrl = new URL('https://gnews.io/api/v4/top-headlines');
+    }
 
     // Forward params
     searchParams.forEach((value, key) => {
-      if (key !== 'apiKey' && key !== 'provider') {
-        // Map common params if necessary, or just forward
+      if (key !== 'apiKey' && key !== 'provider' && value) {
         apiUrl.searchParams.append(key, value);
       }
     });
@@ -73,11 +81,7 @@ export default async function handler(request) {
 
     // Forward params
     searchParams.forEach((value, key) => {
-      if (key !== 'apiKey' && key !== 'provider') {
-        // Map 'q' to 'search' if needed, but adapter should handle it.
-        // TheNewsAPI uses 'search' for query, but our app uses 'q'.
-        // We'll map 'q' to 'search' here or in adapter.
-        // Let's map it here to be safe if adapter sends 'q'.
+      if (key !== 'apiKey' && key !== 'provider' && value) {
         if (key === 'q') {
           apiUrl.searchParams.append('search', value);
         } else {
@@ -104,7 +108,7 @@ export default async function handler(request) {
 
     // Forward params
     searchParams.forEach((value, key) => {
-      if (key !== 'apiKey' && key !== 'provider') {
+      if (key !== 'apiKey' && key !== 'provider' && value) {
         if (key === 'q') {
           apiUrl.searchParams.append('search', value);
         } else {
@@ -126,16 +130,34 @@ export default async function handler(request) {
       });
     }
 
-    // Check if we should use top-headlines (if category is present)
-    const hasCategory = searchParams.has('category');
-    const endpoint = hasCategory ? 'top-headlines' : 'everything';
+    const category = searchParams.get('category');
+    const q = searchParams.get('q');
+    const domains = searchParams.get('domains');
+
+    // Logic to choose endpoint
+    let endpoint = 'everything';
+    let excludeKeys = [];
+
+    if (category) {
+      endpoint = 'top-headlines';
+      // top-headlines ignores: from, to, domains, excludeDomains, sortBy, searchIn
+      excludeKeys = ['from', 'to', 'domains', 'excludeDomains', 'sortBy', 'searchIn'];
+    } else if (!q && !domains) {
+      // No query and no domains -> must use top-headlines (e.g. just country)
+      endpoint = 'top-headlines';
+      excludeKeys = ['from', 'to', 'domains', 'excludeDomains', 'sortBy', 'searchIn'];
+    } else {
+      // Default to everything
+      endpoint = 'everything';
+      // everything ignores: country, category
+      excludeKeys = ['country', 'category'];
+    }
+
     apiUrl = new URL(`https://newsapi.org/v2/${endpoint}`);
 
     // Forward params
     searchParams.forEach((value, key) => {
-      if (key !== 'provider' && key !== 'apiKey') {
-        // Skip empty 'q' parameter
-        if (key === 'q' && !value) return;
+      if (key !== 'provider' && key !== 'apiKey' && value && !excludeKeys.includes(key)) {
         apiUrl.searchParams.append(key, value);
       }
     });
