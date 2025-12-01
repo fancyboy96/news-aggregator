@@ -23,7 +23,14 @@ export default defineConfig(({ mode }) => {
                             if (!apiKey) throw new Error('NewsData API Key missing');
                             apiUrl = new URL('https://newsdata.io/api/1/news');
                             searchParams.forEach((value, key) => {
-                                if (key !== 'apiKey' && key !== 'provider' && value) apiUrl.searchParams.append(key, value);
+                                if (key !== 'apiKey' && key !== 'provider' && value) {
+                                    // NewsData free tier limit is 10
+                                    if (key === 'size' && parseInt(value) > 10) {
+                                        apiUrl.searchParams.append(key, '10');
+                                    } else {
+                                        apiUrl.searchParams.append(key, value);
+                                    }
+                                }
                             });
                             apiUrl.searchParams.append('apikey', apiKey);
                         } else if (provider === 'gnews') {
@@ -77,12 +84,12 @@ export default defineConfig(({ mode }) => {
 
                             if (category) {
                                 endpoint = 'top-headlines';
-                                // top-headlines ignores: from, to, domains, excludeDomains, sortBy
-                                excludeKeys = ['from', 'to', 'domains', 'excludeDomains', 'sortBy'];
+                                // top-headlines ignores: from, to, domains, excludeDomains, sortBy, searchIn
+                                excludeKeys = ['from', 'to', 'domains', 'excludeDomains', 'sortBy', 'searchIn'];
                             } else if (!q && !domains) {
                                 // No query and no domains -> must use top-headlines (e.g. just country)
                                 endpoint = 'top-headlines';
-                                excludeKeys = ['from', 'to', 'domains', 'excludeDomains', 'sortBy'];
+                                excludeKeys = ['from', 'to', 'domains', 'excludeDomains', 'sortBy', 'searchIn'];
                             } else {
                                 // Default to everything
                                 endpoint = 'everything';
