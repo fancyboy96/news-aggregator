@@ -128,13 +128,26 @@ export function setLoading(isLoading) {
     }
 }
 
-export function setError(msg) {
-    if (msg) {
-        els.errorMessage.textContent = msg;
+export function setError(message) {
+    if (message) {
+        els.errorMessage.textContent = message;
         els.errorMessage.classList.remove('hidden');
+        els.errorMessage.classList.remove('bg-yellow-50', 'text-yellow-700', 'border-yellow-100');
+        els.errorMessage.classList.add('bg-red-50', 'text-red-600', 'border-red-100');
+        els.resultsGrid.classList.add('hidden');
+        els.loadMoreContainer.classList.add('hidden');
+        els.loadingIndicator.classList.add('hidden');
     } else {
         els.errorMessage.classList.add('hidden');
     }
+}
+
+export function showWarning(message) {
+    els.errorMessage.textContent = message;
+    els.errorMessage.classList.remove('hidden');
+    els.errorMessage.classList.remove('bg-red-50', 'text-red-600', 'border-red-100');
+    els.errorMessage.classList.add('bg-yellow-50', 'text-yellow-700', 'border-yellow-100');
+    // Do not hide results
 }
 
 export function updateSelectionUI(count) {

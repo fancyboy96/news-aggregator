@@ -345,6 +345,8 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
             isLoadMore
         };
 
+        const failedProviders = [];
+
         // Fetch from all selected providers in parallel
         const promises = providers.map(async providerName => {
             try {
@@ -361,6 +363,7 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
                 return data.articles || [];
             } catch (err) {
                 console.error(`Failed to fetch from ${providerName}:`, err);
+                failedProviders.push(`${providerName}: ${err.message}`);
                 return [];
             }
         });
@@ -384,13 +387,20 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
             renderResults(newArticles, store.get('query'), store.get('isSelectionMode'), store.get('selectedArticleIndices'));
 
             els.resultsGrid.classList.remove('hidden');
-
-            els.resultsGrid.classList.remove('hidden');
             els.actionBar.classList.remove('hidden');
             els.loadMoreContainer.classList.remove('hidden');
+
+            if (failedProviders.length > 0) {
+                showWarning(`Some providers failed to fetch articles: ${failedProviders.join(', ')}`);
+            }
         } else {
-            if (!isLoadMore) setError('No articles found matching your criteria.');
-            else {
+            if (!isLoadMore) {
+                if (failedProviders.length > 0) {
+                    setError(`No articles found. Some providers failed: ${failedProviders.join(', ')}`);
+                } else {
+                    setError('No articles found matching your criteria.');
+                }
+            } else {
                 // No more results
                 const btn = document.getElementById('loadMoreBtn');
                 btn.textContent = 'No more stories';
