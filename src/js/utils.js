@@ -193,12 +193,27 @@ export async function copyToClipboard(content) {
         showNotification('Digest copied! Paste in email to see rich text.');
     } catch (err) {
         console.error('Async: Could not copy text: ', err);
-        // Fallback to text-only writeText if ClipboardItem fails (e.g. Firefox sometimes restricts it)
+        // Fallback 1: Try text-only writeText
         try {
             await navigator.clipboard.writeText(text);
             showNotification('Copied plain text (Rich text failed).');
         } catch (retryErr) {
-            alert('Failed to copy to clipboard.');
+            console.error('Async writeText failed, trying execCommand fallback:', retryErr);
+            // Fallback 2: Legacy execCommand
+            const textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            try {
+                document.execCommand('copy');
+                showNotification('Copied plain text (Legacy fallback).');
+            } catch (legacyErr) {
+                console.error('Legacy execCommand failed:', legacyErr);
+                alert('Failed to copy to clipboard.');
+            }
+            document.body.removeChild(textArea);
         }
     }
 }
