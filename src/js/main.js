@@ -33,7 +33,8 @@ import {
 import {
     generateDigest,
     copyToClipboard,
-    shareArticle
+    shareArticle,
+    showNotification
 } from './utils.js';
 
 // Initialize Analytics
@@ -147,7 +148,28 @@ document.querySelectorAll('.quick-category-btn').forEach(btn => {
 });
 
 els.copyDigestBtn.addEventListener('click', () => {
-    const state = store.get('articles'); // Get all articles
+    // Method 1: Try to copy the visible content directly (Best for Rich Text)
+    if (!els.digestSection.classList.contains('hidden') && els.digestContent.innerHTML) {
+        try {
+            const range = document.createRange();
+            range.selectNode(els.digestContent);
+            window.getSelection().removeAllRanges();
+            window.getSelection().addRange(range);
+
+            const successful = document.execCommand('copy');
+            window.getSelection().removeAllRanges();
+
+            if (successful) {
+                showNotification('Digest copied to clipboard!');
+                return;
+            }
+        } catch (e) {
+            console.error('Direct copy failed, trying fallback:', e);
+        }
+    }
+
+    // Method 2: Fallback to generating and copying (e.g. if preview hidden)
+    const state = store.get('articles');
     const selectedIndices = store.get('selectedArticleIndices');
     const isSelectionMode = store.get('isSelectionMode');
     const query = store.get('query');

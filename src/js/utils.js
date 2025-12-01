@@ -135,6 +135,24 @@ export function generateDigest(articles, query) {
     return { text, html };
 }
 
+export function showNotification(message, isError = false) {
+    // Remove existing toast if any
+    const existingToast = document.getElementById('toast-notification');
+    if (existingToast) existingToast.remove();
+
+    const toast = document.createElement('div');
+    toast.id = 'toast-notification';
+    toast.className = `fixed bottom-8 left-1/2 transform -translate-x-1/2 px-6 py-3 rounded-full shadow-lg text-white font-medium text-sm z-50 animate-fade-in transition-all duration-300 ${isError ? 'bg-red-500' : 'bg-slate-900 dark:bg-white dark:text-slate-900'}`;
+    toast.textContent = message;
+
+    document.body.appendChild(toast);
+
+    setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
 export async function shareArticle(url, event) {
     if (event) {
         event.stopPropagation();
