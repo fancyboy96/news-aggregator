@@ -24,7 +24,8 @@ import {
     setError,
     renderResults,
     appendResults,
-    updateSelectionUI
+    updateSelectionUI,
+    showWarning
 } from './ui.js';
 import {
     fetchNews
