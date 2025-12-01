@@ -193,7 +193,35 @@ export async function copyToClipboard(content) {
         showNotification('Digest copied! Paste in email to see rich text.');
     } catch (err) {
         console.error('Async: Could not copy text: ', err);
-        // Fallback 1: Try text-only writeText
+
+        // Fallback 1: Legacy execCommand with HTML (Rich Text)
+        if (html) {
+            try {
+                const container = document.createElement('div');
+                container.innerHTML = html;
+                container.style.position = 'fixed';
+                container.style.left = '-9999px';
+                document.body.appendChild(container);
+
+                const range = document.createRange();
+                range.selectNode(container);
+                window.getSelection().removeAllRanges();
+                window.getSelection().addRange(range);
+
+                const successful = document.execCommand('copy');
+                document.body.removeChild(container);
+                window.getSelection().removeAllRanges();
+
+                if (successful) {
+                    showNotification('Digest copied (Legacy Rich Text)!');
+                    return;
+                }
+            } catch (htmlErr) {
+                console.error('Legacy HTML copy failed:', htmlErr);
+            }
+        }
+
+        // Fallback 2: Try text-only writeText
         try {
             await navigator.clipboard.writeText(text);
             showNotification('Copied plain text (Rich text failed).');
