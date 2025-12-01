@@ -178,8 +178,14 @@ els.generateDigestBtn.addEventListener('click', () => {
 
     const selected = state.filter((_, idx) => selectedIndices.has(idx));
     if (selected.length > 0) {
-        const digestText = generateDigestText(selected, query);
-        els.digestContent.textContent = digestText;
+        const digest = generateDigest(selected, query);
+
+        // Render HTML preview
+        els.digestContent.innerHTML = digest.html;
+
+        // Remove text-specific classes for rich preview
+        els.digestContent.classList.remove('whitespace-pre-wrap', 'font-mono');
+
         els.digestSection.classList.remove('hidden');
         // Scroll to digest
         els.digestSection.scrollIntoView({ behavior: 'smooth' });
