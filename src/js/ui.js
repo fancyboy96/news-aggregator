@@ -37,7 +37,8 @@ export const els = {
     sunIcon: document.getElementById('sunIcon'),
     moonIcon: document.getElementById('moonIcon'),
     get browseTopicsBtn() { return document.getElementById('browseTopicsBtn'); },
-    get quickCategories() { return document.getElementById('quickCategories'); }
+    get quickCategories() { return document.getElementById('quickCategories'); },
+    appLogo: document.getElementById('appLogo')
 };
 
 export function updateProviderUI() {

@@ -194,6 +194,61 @@ if (els.loadMoreContainer) {
     }
 }
 
+// App Logo Reset
+if (els.appLogo) {
+    els.appLogo.addEventListener('click', () => {
+        // 1. Clear Inputs
+        els.searchInput.value = '';
+        els.categoryInput.value = '';
+        els.sortByInput.value = 'popularity';
+        els.languageInput.value = 'en';
+        els.pageSizeInput.value = '20';
+        els.fromInput.value = '';
+        els.toInput.value = '';
+        els.domainsInput.value = '';
+        els.excludeDomainsInput.value = '';
+
+        // Reset Country
+        if (countrySelector) countrySelector.setValue([]);
+
+        // Reset Providers (all checked by default)
+        els.providerCheckboxes.forEach(cb => cb.checked = true);
+        updateProviderUI();
+
+        // Reset Search In (all checked by default)
+        document.querySelectorAll('input[name="searchIn"]').forEach(cb => cb.checked = true);
+
+        // 2. Clear Store
+        store.set({
+            query: '',
+            articles: [],
+            currentPage: 1,
+            isSearching: false,
+            isSelectionMode: false,
+            selectedArticleIndices: new Set()
+        });
+
+        // 3. Reset UI
+        els.resultsGrid.innerHTML = '';
+        els.resultsGrid.classList.add('hidden');
+        els.actionBar.classList.add('hidden');
+        els.digestSection.classList.add('hidden');
+        els.loadMoreContainer.classList.add('hidden');
+        els.selectionToolbar.classList.add('hidden');
+        els.errorMessage.classList.add('hidden');
+
+        // Reset counts
+        ['newsapi', 'newsdata', 'gnews', 'thenewsapi', 'marketaux'].forEach(p => {
+            const el = document.getElementById(`count-${p}`);
+            if (el) el.textContent = '';
+        });
+
+        // 4. Clear URL
+        const newUrl = window.location.pathname;
+        window.history.pushState({ path: newUrl }, '', newUrl);
+    });
+}
+
 // --- Core Functions ---
 
 async function performSearch(query, pushState = true, isLoadMore = false) {
