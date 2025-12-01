@@ -31,7 +31,7 @@ import {
     fetchNews
 } from './api.js';
 import {
-    generateDigestText,
+    generateDigest,
     copyToClipboard,
     shareArticle
 } from './utils.js';
@@ -157,8 +157,8 @@ els.copyDigestBtn.addEventListener('click', () => {
         : state;
 
     if (articlesToDigest.length > 0) {
-        const digestText = generateDigestText(articlesToDigest, query);
-        copyToClipboard(digestText);
+        const digestContent = generateDigest(articlesToDigest, query);
+        copyToClipboard(digestContent);
     }
 });
 
