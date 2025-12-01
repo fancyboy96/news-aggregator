@@ -23,15 +23,22 @@ export default defineConfig(({ mode }) => {
                             if (!apiKey) throw new Error('NewsData API Key missing');
                             apiUrl = new URL('https://newsdata.io/api/1/news');
                             searchParams.forEach((value, key) => {
-                                if (key !== 'apiKey' && key !== 'provider') apiUrl.searchParams.append(key, value);
+                                if (key !== 'apiKey' && key !== 'provider' && value) apiUrl.searchParams.append(key, value);
                             });
                             apiUrl.searchParams.append('apikey', apiKey);
                         } else if (provider === 'gnews') {
                             apiKey = env.GNEWS_API_KEY;
                             if (!apiKey) throw new Error('GNews API Key missing');
-                            apiUrl = new URL('https://gnews.io/api/v4/search');
+
+                            const q = searchParams.get('q');
+                            if (q) {
+                                apiUrl = new URL('https://gnews.io/api/v4/search');
+                            } else {
+                                apiUrl = new URL('https://gnews.io/api/v4/top-headlines');
+                            }
+
                             searchParams.forEach((value, key) => {
-                                if (key !== 'apiKey' && key !== 'provider') apiUrl.searchParams.append(key, value);
+                                if (key !== 'apiKey' && key !== 'provider' && value) apiUrl.searchParams.append(key, value);
                             });
                             apiUrl.searchParams.append('apikey', apiKey);
                         } else if (provider === 'thenewsapi') {
@@ -39,7 +46,7 @@ export default defineConfig(({ mode }) => {
                             if (!apiKey) throw new Error('TheNewsAPI Key missing');
                             apiUrl = new URL('https://api.thenewsapi.com/v1/news/all');
                             searchParams.forEach((value, key) => {
-                                if (key !== 'apiKey' && key !== 'provider') {
+                                if (key !== 'apiKey' && key !== 'provider' && value) {
                                     if (key === 'q') apiUrl.searchParams.append('search', value);
                                     else apiUrl.searchParams.append(key, value);
                                 }
@@ -50,7 +57,7 @@ export default defineConfig(({ mode }) => {
                             if (!apiKey) throw new Error('Marketaux API Token missing');
                             apiUrl = new URL('https://api.marketaux.com/v1/news/all');
                             searchParams.forEach((value, key) => {
-                                if (key !== 'apiKey' && key !== 'provider') {
+                                if (key !== 'apiKey' && key !== 'provider' && value) {
                                     if (key === 'q') apiUrl.searchParams.append('search', value);
                                     else apiUrl.searchParams.append(key, value);
                                 }
@@ -59,9 +66,35 @@ export default defineConfig(({ mode }) => {
                         } else {
                             apiKey = env.NEWSAPI_KEY;
                             if (!apiKey) throw new Error('NewsAPI Key missing');
-                            apiUrl = new URL('https://newsapi.org/v2/everything');
+
+                            const category = searchParams.get('category');
+                            const q = searchParams.get('q');
+                            const domains = searchParams.get('domains');
+
+                            // Logic to choose endpoint
+                            let endpoint = 'everything';
+                            let excludeKeys = [];
+
+                            if (category) {
+                                endpoint = 'top-headlines';
+                                // top-headlines ignores: from, to, domains, excludeDomains, sortBy
+                                excludeKeys = ['from', 'to', 'domains', 'excludeDomains', 'sortBy'];
+                            } else if (!q && !domains) {
+                                // No query and no domains -> must use top-headlines (e.g. just country)
+                                endpoint = 'top-headlines';
+                                excludeKeys = ['from', 'to', 'domains', 'excludeDomains', 'sortBy'];
+                            } else {
+                                // Default to everything
+                                endpoint = 'everything';
+                                // everything ignores: country, category
+                                excludeKeys = ['country', 'category'];
+                            }
+
+                            apiUrl = new URL(`https://newsapi.org/v2/${endpoint}`);
                             searchParams.forEach((value, key) => {
-                                if (key !== 'provider' && key !== 'apiKey') apiUrl.searchParams.append(key, value);
+                                if (key !== 'provider' && key !== 'apiKey' && value && !excludeKeys.includes(key)) {
+                                    apiUrl.searchParams.append(key, value);
+                                }
                             });
                             apiUrl.searchParams.append('apiKey', apiKey);
                         }
