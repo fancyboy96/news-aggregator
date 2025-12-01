@@ -20,21 +20,21 @@ export class NewsDataProvider extends NewsProvider {
 
         const params = new URLSearchParams();
         params.append('q', query);
-        params.append('page', page); // NewsData uses cursor-based pagination usually, but proxy handles basic page mapping if possible, or we just send page number and hope proxy handles it or API ignores it. (Actually NewsData uses 'page' parameter for cursor, so page number won't work directly without cursor management. For now we pass page, but NewsData pagination is complex. Let's stick to basic.)
+        // NewsData uses cursor-based pagination. 'page' must be a cursor string, not a number.
+        // We cannot use page numbers. For now, we omit 'page' unless we implement cursor logic.
+        if (typeof page === 'string') params.append('page', page);
+
         params.append('provider', 'newsdata');
 
         if (language) params.append('language', language);
         if (country) params.append('country', country);
         if (pageSize) params.append('size', pageSize);
         if (domains) params.append('domain', domains);
-        if (domains) params.append('domain', domains);
         if (excludeDomains) params.append('excludedomain', excludeDomains);
         if (category) params.append('category', category);
 
-        // Sorting Mapping
-        if (sortBy === 'relevancy' || sortBy === 'popularity') {
-            params.append('sort', 'relevancy');
-        }
+        // Sorting: NewsData free tier has limited sorting. 'relevancy' might be paid-only or restricted.
+        // We omit 'sort' to use default (published_desc) to avoid 422 errors.
 
         const url = '/api/proxy';
         const data = await fetchWithRetry(`${url}?${params.toString()}`);

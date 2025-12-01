@@ -392,12 +392,14 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
             els.loadMoreContainer.classList.remove('hidden');
 
             if (failedProviders.length > 0) {
-                showWarning(`Some providers failed to fetch articles: ${failedProviders.join(', ')}`);
+                console.warn(`Some providers failed to fetch articles: ${failedProviders.join(', ')}`);
             }
         } else {
             if (!isLoadMore) {
                 if (failedProviders.length > 0) {
-                    setError(`No articles found. Some providers failed: ${failedProviders.join(', ')}`);
+                    console.warn(`No articles found. Some providers failed: ${failedProviders.join(', ')}`);
+                    // Still show generic "No articles" message to user, but don't show specific API errors
+                    setError('No articles found matching your criteria.');
                 } else {
                     setError('No articles found matching your criteria.');
                 }
