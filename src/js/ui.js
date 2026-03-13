@@ -166,13 +166,24 @@ export function appendResults(articles, startIndex, query, isSelectionMode, sele
     els.resultsGrid.insertAdjacentHTML('beforeend', html);
 }
 
+function getRelativeTime(dateStr) {
+    const ms = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(ms / 60000);
+    if (mins < 1)  return 'just now';
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24)  return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    if (days < 7)  return `${days}d ago`;
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+
 function generateArticlesHtml(articles, startIndex, query, isSelectionMode, selectedIndices) {
     return articles.map((article, i) => {
         const index = startIndex + i;
-        const date = new Date(article.publishedAt).toLocaleDateString('en-US', {
-            month: 'short', day: 'numeric', year: 'numeric'
-        });
+        const timeAgo = getRelativeTime(article.publishedAt);
         const image = article.urlToImage || 'https://placehold.co/600x400/f1f5f9/94a3b8?text=No+Image';
+        const staggerDelay = (i % 9) * 55;
 
         // Apply highlighting
         const titleHtml = highlightText(article.title, query);
@@ -207,22 +218,26 @@ function generateArticlesHtml(articles, startIndex, query, isSelectionMode, sele
                     (article.apiSource === 'marketaux' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700')));
 
         return `
-            <article id="article-${index}" class="article-card group bg-white dark:bg-slate-800 rounded-3xl shadow-sm hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-300 overflow-hidden flex flex-col h-full relative border border-slate-100 dark:border-slate-700 ${isSelected ? 'selected' : ''}" ${clickHandler}>
+            <article id="article-${index}" class="article-card group bg-white dark:bg-slate-900/70 backdrop-blur-sm rounded-3xl shadow-sm border border-slate-200/60 dark:border-slate-700/50 overflow-hidden flex flex-col h-full relative transition-all duration-300 ${isSelected ? 'selected' : ''}" style="--stagger-delay: ${staggerDelay}ms" ${clickHandler}>
                 ${selectionOverlay}
-                <div class="h-56 overflow-hidden relative bg-slate-100 dark:bg-slate-700">
-                     <img src="${image}" alt="${article.title}" loading="lazy" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700" onerror="this.onerror=null;this.src='https://placehold.co/600x400/f1f5f9/94a3b8?text=No+Image'">
-                     <div class="absolute top-4 left-4 flex gap-2">
-                        <span class="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm text-slate-700 dark:text-slate-200 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm border border-white/50 dark:border-slate-700/50">
+                <div class="h-56 overflow-hidden relative bg-slate-100 dark:bg-slate-800">
+                    <img src="${image}" alt="${article.title}" loading="lazy" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700" onerror="this.onerror=null;this.src='https://placehold.co/600x400/f1f5f9/94a3b8?text=No+Image'">
+                    <!-- Editorial gradient overlay -->
+                    <div class="absolute inset-0 bg-gradient-to-t from-black/50 via-black/5 to-transparent pointer-events-none"></div>
+                    <div class="absolute top-3 left-3 flex gap-2">
+                        <span class="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm text-slate-700 dark:text-slate-200 text-xs font-semibold px-2.5 py-1 rounded-full shadow-sm border border-white/40 dark:border-slate-700/40">
                             ${article.source.name || 'Unknown Source'}
                         </span>
-                     </div>
+                    </div>
+                    <div class="absolute bottom-3 right-3">
+                        <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${sourceColorClass} shadow-sm">
+                            ${article.apiSource === 'newsdata' ? 'NewsData' : (article.apiSource === 'gnews' ? 'GNews' : (article.apiSource === 'thenewsapi' ? 'TheNewsAPI' : (article.apiSource === 'marketaux' ? 'Marketaux' : 'NewsAPI')))}
+                        </span>
+                    </div>
                 </div>
                 <div class="p-6 flex-1 flex flex-col">
                     <div class="flex justify-between items-center mb-3">
-                        <span class="text-xs font-medium text-slate-400 dark:text-slate-500">${date}</span>
-                        <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${sourceColorClass}">
-                            ${article.apiSource === 'newsdata' ? 'NewsData' : (article.apiSource === 'gnews' ? 'GNews' : (article.apiSource === 'thenewsapi' ? 'TheNewsAPI' : (article.apiSource === 'marketaux' ? 'Marketaux' : 'NewsAPI')))}
-                        </span>
+                        <span class="text-xs font-medium text-slate-400 dark:text-slate-500">${timeAgo}</span>
                     </div>
                     
                     <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-3 leading-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">

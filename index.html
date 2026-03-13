@@ -14,37 +14,47 @@
 </head>
 
 <body
-    class="min-h-screen selection:bg-indigo-100 selection:text-indigo-700 dark:bg-slate-900 dark:text-slate-100 transition-colors duration-300">
+    class="min-h-screen selection:bg-indigo-100 selection:text-indigo-700 dark:text-slate-100 transition-colors duration-300">
 
     <!-- Main Content -->
     <div class="max-w-6xl mx-auto px-6 py-16">
 
         <!-- Header -->
         <header class="text-center mb-16 animate-fade-in relative">
+
+            <!-- Decorative blur blobs -->
+            <div class="absolute inset-0 overflow-hidden pointer-events-none -z-10" aria-hidden="true">
+                <div class="absolute -top-20 left-1/2 -translate-x-1/2 w-96 h-96 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-full blur-3xl"></div>
+                <div class="absolute -top-10 left-1/4 w-64 h-64 bg-violet-500/8 dark:bg-violet-500/15 rounded-full blur-3xl"></div>
+                <div class="absolute -top-10 right-1/4 w-48 h-48 bg-blue-500/6 dark:bg-blue-500/12 rounded-full blur-3xl"></div>
+            </div>
+
             <div class="absolute top-0 right-0">
                 <button id="themeToggleBtn"
-                    class="p-2 rounded-full hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors text-slate-500 dark:text-slate-400">
+                    class="p-2 rounded-full hover:bg-white/80 dark:hover:bg-slate-800/80 transition-colors text-slate-400 dark:text-slate-500 backdrop-blur-sm">
                     <!-- Sun Icon (for Dark Mode) -->
-                    <svg id="sunIcon" class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg id="sunIcon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z">
                         </path>
                     </svg>
                     <!-- Moon Icon (for Light Mode) -->
-                    <svg id="moonIcon" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg id="moonIcon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z">
                         </path>
                     </svg>
                 </button>
             </div>
+
             <h1 id="appLogo"
-                class="text-6xl font-extrabold tracking-tight text-slate-900 dark:text-white mb-4 cursor-pointer hover:opacity-80 transition-opacity">
-                Currents<span class="text-indigo-500">.</span>
+                class="text-6xl font-extrabold tracking-tight mb-3 cursor-pointer hover:opacity-90 transition-opacity">
+                <span class="gradient-text">Currents</span><span class="text-indigo-400">.</span>
             </h1>
+            <p class="text-sm text-slate-400 dark:text-slate-500 font-medium tracking-wide">Your intelligent news feed</p>
 
             <div
-                class="mt-6 inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm text-xs font-medium text-slate-400 dark:text-slate-500">
+                class="mt-5 inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border border-slate-200/80 dark:border-slate-700/80 shadow-sm text-xs font-medium text-slate-400 dark:text-slate-500">
                 <span id="currentProviderDisplay">Provider: NewsAPI</span>
             </div>
         </header>
@@ -52,7 +62,7 @@
         <!-- Search Section -->
         <div class="max-w-4xl mx-auto mb-12 animate-fade-in" style="animation-delay: 0.1s;">
             <div
-                class="bg-white dark:bg-slate-800 rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-none p-2 border border-slate-100 dark:border-slate-700 transition-colors">
+                class="search-container bg-white/90 dark:bg-slate-900/80 backdrop-blur-md rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-slate-950/50 p-2 border border-slate-200/60 dark:border-slate-700/60 transition-all duration-300">
                 <form id="searchForm" class="flex flex-col md:flex-row gap-2">
                     <div class="flex-1 relative">
                         <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
@@ -64,12 +74,12 @@
                         </div>
                         <input type="text" id="searchInput" required
                             class="w-full pl-11 pr-4 py-4 bg-transparent border-none rounded-2xl focus:ring-0 text-lg text-slate-800 dark:text-slate-100 placeholder-slate-400 outline-none"
-                            placeholder="Search topics (e.g. 'technology', 'crypto')">
+                            placeholder="Search topics, stories, events…">
                     </div>
 
                     <div class="flex gap-2 p-1">
                         <button type="button" id="toggleFiltersBtn"
-                            class="px-5 py-3 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-slate-700 dark:hover:text-slate-200 font-medium transition-colors flex items-center gap-2">
+                            class="px-5 py-3 rounded-xl text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-700 dark:hover:text-slate-200 font-medium transition-colors flex items-center gap-2">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24"
                                 stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -78,7 +88,7 @@
                             <span>Filters</span>
                         </button>
                         <button type="submit" id="searchBtn"
-                            class="bg-indigo-600 hover:bg-indigo-700 text-white font-semibold px-8 py-3 rounded-xl transition-all shadow-lg shadow-indigo-200 dark:shadow-indigo-900/40 hover:shadow-indigo-300 dark:hover:shadow-indigo-900/60 active:scale-95 flex items-center justify-center gap-2">
+                            class="bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-semibold px-8 py-3 rounded-xl transition-all shadow-lg shadow-indigo-500/25 dark:shadow-indigo-900/50 hover:shadow-indigo-500/40 dark:hover:shadow-indigo-900/70 active:scale-95 flex items-center justify-center gap-2">
                             Search
                         </button>
                     </div>
