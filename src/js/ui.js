@@ -210,7 +210,7 @@ function generateArticlesHtml(articles, startIndex, query, isSelectionMode, sele
             <article id="article-${index}" class="article-card group bg-white dark:bg-slate-800 rounded-3xl shadow-sm hover:shadow-xl hover:shadow-slate-200/50 dark:hover:shadow-none transition-all duration-300 overflow-hidden flex flex-col h-full relative border border-slate-100 dark:border-slate-700 ${isSelected ? 'selected' : ''}" ${clickHandler}>
                 ${selectionOverlay}
                 <div class="h-56 overflow-hidden relative bg-slate-100 dark:bg-slate-700">
-                     <img src="${image}" alt="${article.title}" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700" onerror="this.onerror=null;this.src='https://placehold.co/600x400/f1f5f9/94a3b8?text=No+Image'">
+                     <img src="${image}" alt="${article.title}" loading="lazy" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700" onerror="this.onerror=null;this.src='https://placehold.co/600x400/f1f5f9/94a3b8?text=No+Image'">
                      <div class="absolute top-4 left-4 flex gap-2">
                         <span class="bg-white/90 dark:bg-slate-900/90 backdrop-blur-sm text-slate-700 dark:text-slate-200 text-xs font-bold px-3 py-1.5 rounded-full shadow-sm border border-white/50 dark:border-slate-700/50">
                             ${article.source.name || 'Unknown Source'}

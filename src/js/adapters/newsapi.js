@@ -42,7 +42,6 @@ export class NewsApiProvider extends NewsProvider {
         if (to) params.append('to', to);
         if (domains) params.append('domains', domains);
         if (excludeDomains) params.append('excludeDomains', excludeDomains);
-        if (excludeDomains) params.append('excludeDomains', excludeDomains);
         if (searchIn && searchIn !== 'title,description,content') params.append('searchIn', searchIn);
         if (category) params.append('category', category);
 

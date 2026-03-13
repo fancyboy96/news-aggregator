@@ -399,43 +399,69 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
 
         const resultsArrays = await Promise.all(promises);
 
-        // If Load More, include current articles in the merge to re-sort everything
-        let allResultsArrays = resultsArrays;
+        const mergedNew = mergeResults(resultsArrays, options.sortBy, query);
+
         if (isLoadMore) {
             const currentArticles = store.get('articles');
-            // currentArticles is a flat array, resultsArrays is array of arrays
-            // We wrap currentArticles in an array so it's treated as one "batch" to be flattened
-            allResultsArrays = [currentArticles, ...resultsArrays];
-        }
 
-        const newArticles = mergeResults(allResultsArrays, options.sortBy, query);
-
-        if (newArticles.length > 0) {
-            store.set({ articles: newArticles });
-            // Always render full results to ensure correct order
-            renderResults(newArticles, store.get('query'), store.get('isSelectionMode'), store.get('selectedArticleIndices'));
-
-            els.resultsGrid.classList.remove('hidden');
-            els.actionBar.classList.remove('hidden');
-            els.loadMoreContainer.classList.remove('hidden');
-
-            if (failedProviders.length > 0) {
-                console.warn(`Some providers failed to fetch articles: ${failedProviders.join(', ')}`);
-            }
-        } else {
-            if (!isLoadMore) {
-                if (failedProviders.length > 0) {
-                    console.warn(`No articles found. Some providers failed: ${failedProviders.join(', ')}`);
-                    // Still show generic "No articles" message to user, but don't show specific API errors
-                    setError('No articles found matching your criteria.');
-                } else {
-                    setError('No articles found matching your criteria.');
+            // Build a key set from existing articles to dedup new results against
+            const seenUrls = new Set();
+            const seenTitles = new Set();
+            currentArticles.forEach(a => {
+                if (a.url && a.url !== '#') {
+                    try {
+                        const u = new URL(a.url);
+                        seenUrls.add(u.origin + u.pathname.replace(/\/$/, ''));
+                    } catch(e) { seenUrls.add(a.url); }
                 }
+                if (a.title) seenTitles.add(a.title.toLowerCase().replace(/[^a-z0-9]/g, ''));
+            });
+
+            const trulyNew = mergedNew.filter(a => {
+                let urlKey = '';
+                if (a.url && a.url !== '#') {
+                    try {
+                        const u = new URL(a.url);
+                        urlKey = u.origin + u.pathname.replace(/\/$/, '');
+                    } catch(e) { urlKey = a.url; }
+                }
+                const titleKey = a.title ? a.title.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
+                if (urlKey && seenUrls.has(urlKey)) return false;
+                if (titleKey && seenTitles.has(titleKey)) return false;
+                return true;
+            });
+
+            if (trulyNew.length > 0) {
+                store.set({ articles: [...currentArticles, ...trulyNew] });
+                appendResults(trulyNew, currentArticles.length, store.get('query'), store.get('isSelectionMode'), store.get('selectedArticleIndices'));
+                els.loadMoreContainer.classList.remove('hidden');
             } else {
-                // No more results
                 const btn = document.getElementById('loadMoreBtn');
                 btn.textContent = 'No more stories';
                 btn.disabled = true;
+            }
+
+            if (failedProviders.length > 0) {
+                showWarning(`${failedProviders.length} provider(s) failed to respond. Results may be incomplete.`);
+            }
+        } else {
+            if (mergedNew.length > 0) {
+                store.set({ articles: mergedNew });
+                renderResults(mergedNew, store.get('query'), store.get('isSelectionMode'), store.get('selectedArticleIndices'));
+
+                els.resultsGrid.classList.remove('hidden');
+                els.actionBar.classList.remove('hidden');
+                els.loadMoreContainer.classList.remove('hidden');
+
+                if (failedProviders.length > 0) {
+                    showWarning(`${failedProviders.length} provider(s) failed to respond. Results may be incomplete.`);
+                }
+            } else {
+                if (failedProviders.length > 0) {
+                    setError('No articles found. Some providers failed to respond.');
+                } else {
+                    setError('No articles found matching your criteria.');
+                }
             }
         }
 
@@ -523,6 +549,10 @@ function mergeResults(resultsArrays, sortBy = 'publishedAt', query = '') {
     console.log('Deduped results:', merged.length);
 
     if (sortBy === 'relevancy') {
+        // Drop articles with zero relevance score (query not found in title or description)
+        if (query) {
+            merged = merged.filter(a => scoreArticle(a, query) > 0);
+        }
         // Score each article by query term matches in title/description, with a recency tiebreaker
         merged.sort((a, b) => {
             const scoreDiff = scoreArticle(b, query) - scoreArticle(a, query);
