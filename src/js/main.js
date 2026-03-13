@@ -408,7 +408,7 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
             allResultsArrays = [currentArticles, ...resultsArrays];
         }
 
-        const newArticles = mergeResults(allResultsArrays, options.sortBy);
+        const newArticles = mergeResults(allResultsArrays, options.sortBy, query);
 
         if (newArticles.length > 0) {
             store.set({ articles: newArticles });
@@ -464,16 +464,37 @@ function loadMoreArticles() {
     performSearch(store.get('query'), false, true);
 }
 
-function mergeResults(resultsArrays, sortBy = 'publishedAt') {
+function scoreArticle(article, query) {
+    if (!query) return 0;
+    const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+    const title = (article.title || '').toLowerCase();
+    const desc = (article.description || '').toLowerCase();
+    let score = 0;
+    terms.forEach(term => {
+        if (title.includes(term)) score += 3;
+        if (desc.includes(term)) score += 1;
+    });
+    // Recency bonus for articles published within the last 48 hours
+    const ageMs = Date.now() - new Date(article.publishedAt).getTime();
+    if (ageMs < 48 * 60 * 60 * 1000) score += 1;
+    return score;
+}
+
+function mergeResults(resultsArrays, sortBy = 'publishedAt', query = '') {
     // Flatten array of arrays
     let merged = resultsArrays.flat();
     console.log('Merged raw results:', merged.length);
 
+    // Filter out junk articles (removed/unavailable content from NewsAPI, etc.)
+    merged = merged.filter(article => {
+        if (!article.title || article.title === '[Removed]') return false;
+        if (!article.url || article.url === '#') return false;
+        return true;
+    });
+
     // Remove duplicates (by Normalized URL or Title)
     const seen = new Set();
     merged = merged.filter(article => {
-        if (!article.url && !article.title) return false;
-
         // Normalize URL: remove query parameters and trailing slashes
         let urlKey = '';
         if (article.url) {
@@ -490,10 +511,6 @@ function mergeResults(resultsArrays, sortBy = 'publishedAt') {
         // Normalize Title: lowercase, remove special chars
         const titleKey = article.title ? article.title.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
 
-        // Check if we've seen this article
-        // We prefer URL matching, but fallback to title if URL is missing or generic
-        const key = urlKey || titleKey;
-
         // Also check titleKey specifically if we have one, to catch same article with different URLs
         if (titleKey && seen.has(titleKey)) return false;
         if (urlKey && seen.has(urlKey)) return false;
@@ -505,15 +522,17 @@ function mergeResults(resultsArrays, sortBy = 'publishedAt') {
     });
     console.log('Deduped results:', merged.length);
 
-    // Sort by Date (Newest first) if requested or default
-    if (!sortBy || sortBy === 'publishedAt') {
+    if (sortBy === 'relevancy') {
+        // Score each article by query term matches in title/description, with a recency tiebreaker
         merged.sort((a, b) => {
+            const scoreDiff = scoreArticle(b, query) - scoreArticle(a, query);
+            if (scoreDiff !== 0) return scoreDiff;
             return new Date(b.publishedAt) - new Date(a.publishedAt);
         });
+    } else if (!sortBy || sortBy === 'publishedAt') {
+        merged.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
     }
-    // For 'popularity' or 'relevancy', we keep the provider's order (interleaved)
-    // or we could try to sort by some other metric if available.
-    // But since we don't have a unified score, we leave it as is (which is roughly interleaved).
+    // For 'popularity', keep the providers' interleaved order (each provider's own ranking)
 
     return merged;
 }
