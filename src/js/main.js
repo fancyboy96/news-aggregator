@@ -30,8 +30,10 @@ import {
     renderCoveragePulse
 } from './ui.js';
 import {
-    fetchNews
+    fetchNews,
+    fetchGdeltTimeline
 } from './api.js';
+import { REGIONS, getRegionById } from './regions.js';
 import {
     generateDigest,
     copyToClipboard,
@@ -48,6 +50,7 @@ window.toggleArticleSelection = toggleArticleSelection;
 
 import { CountrySelector } from './components/country-selector.js';
 let countrySelector;
+let selectedRegionId = null;
 
 // --- Initialization ---
 function init() {
@@ -55,6 +58,9 @@ function init() {
 
     // Init Country Selector
     countrySelector = new CountrySelector(els.countrySelectorContainer);
+
+    // Init Region Buttons
+    initRegionButtons();
 
     // Restore state from URL if present
     const params = new URLSearchParams(window.location.search);
@@ -245,9 +251,16 @@ if (els.appLogo) {
         // Reset Country
         if (countrySelector) countrySelector.setValue([]);
 
-        // Reset Providers (all checked by default)
-        els.providerCheckboxes.forEach(cb => cb.checked = true);
+        // Reset Providers (all except gdelt checked by default)
+        els.providerCheckboxes.forEach(cb => { cb.checked = cb.value !== 'gdelt'; });
         updateProviderUI();
+
+        // Reset region selection
+        selectedRegionId = null;
+        document.querySelectorAll('.region-btn').forEach(btn => {
+            btn.classList.remove('bg-indigo-600', 'text-white', 'border-indigo-600', 'dark:bg-indigo-600');
+            btn.classList.add('bg-slate-50', 'text-slate-600', 'border-slate-200');
+        });
 
         // Reset Search In (all checked by default)
         document.querySelectorAll('input[name="searchIn"]').forEach(cb => cb.checked = true);
@@ -274,7 +287,7 @@ if (els.appLogo) {
         els.coveragePulse.classList.add('hidden');
 
         // Reset counts
-        ['newsapi', 'newsdata', 'gnews', 'thenewsapi', 'marketaux'].forEach(p => {
+        ['newsapi', 'newsdata', 'gnews', 'thenewsapi', 'marketaux', 'gdelt'].forEach(p => {
             const el = document.getElementById(`count-${p}`);
             if (el) el.textContent = '';
         });
@@ -348,7 +361,7 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
         els.resultsGrid.innerHTML = ''; // Clear previous results
 
         // Reset counts
-        ['newsapi', 'newsdata', 'gnews', 'thenewsapi', 'marketaux'].forEach(p => {
+        ['newsapi', 'newsdata', 'gnews', 'thenewsapi', 'marketaux', 'gdelt'].forEach(p => {
             const el = document.getElementById(`count-${p}`);
             if (el) el.textContent = '';
         });
@@ -366,6 +379,7 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
 
         // Gather common options
         const providerCursors = store.get('providerCursors');
+        const region = selectedRegionId ? getRegionById(selectedRegionId) : null;
         const options = {
             page: currentPage,
             sortBy: els.sortByInput.value,
@@ -380,6 +394,7 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
             searchIn: Array.from(document.querySelectorAll('input[name="searchIn"]:checked'))
                 .map(cb => cb.value)
                 .join(','),
+            gdeltFips: region ? region.fips : null,
             isLoadMore
         };
 
@@ -472,6 +487,13 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
                 els.loadMoreContainer.classList.remove('hidden');
 
                 renderCoveragePulse(mergedNew, query);
+
+                // Refine pulse with GDELT's comprehensive 7-day timeline data
+                if (query) {
+                    fetchGdeltTimeline(query).then(buckets => {
+                        if (buckets) renderCoveragePulse([], query, buckets);
+                    }).catch(() => {});
+                }
 
                 if (failedProviders.length > 0) {
                     showWarning(`${failedProviders.length} provider(s) failed to respond. Results may be incomplete.`);
@@ -683,6 +705,61 @@ async function fetchAndRenderTrending() {
         });
     } catch (e) {
         // Trending is non-critical — fail silently
+    }
+}
+
+// ─── Region Selection ─────────────────────────────────────────────────────────
+
+function initRegionButtons() {
+    const container = document.getElementById('regionBtns');
+    if (!container) return;
+    container.innerHTML = REGIONS.map(r => `
+        <button type="button" data-region="${r.id}"
+            class="region-btn px-3 py-1.5 rounded-full text-xs font-medium border transition-colors
+                   bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300
+                   border-slate-200 dark:border-slate-600
+                   hover:bg-indigo-50 dark:hover:bg-indigo-900/30 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-200 dark:hover:border-indigo-800">
+            ${r.emoji} ${r.name}
+        </button>
+    `).join('');
+    container.querySelectorAll('.region-btn').forEach(btn => {
+        btn.addEventListener('click', () => selectRegion(btn.dataset.region));
+    });
+}
+
+function selectRegion(regionId) {
+    const isSame = selectedRegionId === regionId;
+    selectedRegionId = isSame ? null : regionId;
+
+    // Update button visual state
+    document.querySelectorAll('.region-btn').forEach(btn => {
+        const active = btn.dataset.region === selectedRegionId;
+        btn.classList.toggle('bg-indigo-600', active);
+        btn.classList.toggle('text-white', active);
+        btn.classList.toggle('border-indigo-600', active);
+        btn.classList.toggle('dark:bg-indigo-600', active);
+        btn.classList.toggle('bg-slate-50', !active);
+        btn.classList.toggle('dark:bg-slate-700\\/50', !active);
+        btn.classList.toggle('text-slate-600', !active);
+        btn.classList.toggle('dark:text-slate-300', !active);
+        btn.classList.toggle('border-slate-200', !active);
+        btn.classList.toggle('dark:border-slate-600', !active);
+    });
+
+    if (selectedRegionId) {
+        const region = getRegionById(selectedRegionId);
+        if (region) {
+            // Set country filter to region's ISO codes (for other providers)
+            if (countrySelector) countrySelector.setValue(region.iso);
+            // Auto-enable GDELT
+            const gdeltCb = document.querySelector('.provider-checkbox[value="gdelt"]');
+            if (gdeltCb && !gdeltCb.checked) {
+                gdeltCb.checked = true;
+                updateProviderUI();
+            }
+        }
+    } else {
+        if (countrySelector) countrySelector.setValue([]);
     }
 }
 

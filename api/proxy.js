@@ -120,6 +120,15 @@ export default async function handler(request) {
     // Marketaux expects 'api_token'
     apiUrl.searchParams.append('api_token', apiKey);
 
+  } else if (provider === 'gdelt') {
+    // GDELT DOC API — free, no API key required
+    apiUrl = new URL('https://api.gdeltproject.org/api/v2/doc/doc');
+    searchParams.forEach((value, key) => {
+      if (key !== 'provider' && value) {
+        apiUrl.searchParams.append(key, value);
+      }
+    });
+
   } else {
     // NewsAPI.org API (Default)
     apiKey = process.env.NEWSAPI_KEY;

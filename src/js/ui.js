@@ -218,7 +218,8 @@ function generateArticlesHtml(articles, startIndex, query, isSelectionMode, sele
         const sourceColorClass = article.apiSource === 'newsdata' ? 'bg-orange-100 text-orange-700' :
             (article.apiSource === 'gnews' ? 'bg-blue-100 text-blue-700' :
                 (article.apiSource === 'thenewsapi' ? 'bg-purple-100 text-purple-700' :
-                    (article.apiSource === 'marketaux' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700')));
+                    (article.apiSource === 'marketaux' ? 'bg-rose-100 text-rose-700' :
+                        (article.apiSource === 'gdelt' ? 'bg-teal-100 text-teal-700' : 'bg-emerald-100 text-emerald-700'))));
 
         return `
             <article id="article-${index}" class="article-card group bg-white dark:bg-slate-900/70 backdrop-blur-sm rounded-3xl shadow-sm border border-slate-200/60 dark:border-slate-700/50 overflow-hidden flex flex-col h-full relative transition-all duration-300 ${isSelected ? 'selected' : ''}" style="--stagger-delay: ${staggerDelay}ms" ${clickHandler}>
@@ -234,7 +235,7 @@ function generateArticlesHtml(articles, startIndex, query, isSelectionMode, sele
                     </div>
                     <div class="absolute bottom-3 right-3">
                         <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${sourceColorClass} shadow-sm">
-                            ${article.apiSource === 'newsdata' ? 'NewsData' : (article.apiSource === 'gnews' ? 'GNews' : (article.apiSource === 'thenewsapi' ? 'TheNewsAPI' : (article.apiSource === 'marketaux' ? 'Marketaux' : 'NewsAPI')))}
+                            ${article.apiSource === 'newsdata' ? 'NewsData' : (article.apiSource === 'gnews' ? 'GNews' : (article.apiSource === 'thenewsapi' ? 'TheNewsAPI' : (article.apiSource === 'marketaux' ? 'Marketaux' : (article.apiSource === 'gdelt' ? 'GDELT' : 'NewsAPI'))))}
                         </span>
                     </div>
                 </div>
@@ -323,17 +324,21 @@ function buildSparklineSvg(data) {
     </svg>`;
 }
 
-export function renderCoveragePulse(articles, query) {
+export function renderCoveragePulse(articles, query, precomputedBuckets = null) {
     if (!els.coveragePulse) return;
 
-    const now = Date.now();
-    const DAY = 86400000;
-    const buckets = Array(7).fill(0);
-
-    articles.forEach(a => {
-        const daysAgo = Math.floor((now - new Date(a.publishedAt).getTime()) / DAY);
-        if (daysAgo >= 0 && daysAgo < 7) buckets[6 - daysAgo]++;
-    });
+    let buckets;
+    if (precomputedBuckets) {
+        buckets = precomputedBuckets;
+    } else {
+        const now = Date.now();
+        const DAY = 86400000;
+        buckets = Array(7).fill(0);
+        articles.forEach(a => {
+            const daysAgo = Math.floor((now - new Date(a.publishedAt).getTime()) / DAY);
+            if (daysAgo >= 0 && daysAgo < 7) buckets[6 - daysAgo]++;
+        });
+    }
 
     const total = buckets.reduce((a, b) => a + b, 0);
     if (total === 0) {

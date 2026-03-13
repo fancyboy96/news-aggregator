@@ -201,6 +201,15 @@
                                         class="ml-3 text-sm font-medium text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">Marketaux
                                         <span id="count-marketaux" class="text-xs text-slate-400 ml-1"></span></span>
                                 </label>
+                                <label class="flex items-center cursor-pointer group">
+                                    <input type="checkbox"
+                                        class="form-checkbox text-indigo-600 rounded-md w-5 h-5 border-slate-300 focus:ring-indigo-500 provider-checkbox"
+                                        value="gdelt">
+                                    <span
+                                        class="ml-3 text-sm font-medium text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">GDELT
+                                        <span class="text-[10px] font-medium text-teal-500 ml-1">free · global</span>
+                                        <span id="count-gdelt" class="text-xs text-slate-400 ml-1"></span></span>
+                                </label>
                             </div>
                         </div>
 
@@ -314,6 +323,17 @@
                                         <span class="ml-2 text-sm text-slate-600 dark:text-slate-300">Desc</span>
                                     </label>
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- Region Selector (Full Width) -->
+                        <div class="md:col-span-3 pt-2 border-t border-slate-50 dark:border-slate-700">
+                            <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-3">
+                                Geographic Region
+                                <span class="normal-case font-normal text-slate-300 dark:text-slate-600 ml-1">· auto-enables GDELT</span>
+                            </label>
+                            <div id="regionBtns" class="flex flex-wrap gap-2">
+                                <!-- Populated dynamically from regions.js -->
                             </div>
                         </div>
 

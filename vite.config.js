@@ -70,6 +70,14 @@ export default defineConfig(({ mode }) => {
                                 }
                             });
                             apiUrl.searchParams.append('api_token', apiKey);
+                        } else if (provider === 'gdelt') {
+                            // GDELT DOC API — free, no API key required
+                            apiUrl = new URL('https://api.gdeltproject.org/api/v2/doc/doc');
+                            searchParams.forEach((value, key) => {
+                                if (key !== 'provider' && value) {
+                                    apiUrl.searchParams.append(key, value);
+                                }
+                            });
                         } else {
                             apiKey = env.NEWSAPI_KEY;
                             if (!apiKey) throw new Error('NewsAPI Key missing');

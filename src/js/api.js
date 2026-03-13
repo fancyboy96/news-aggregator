@@ -3,6 +3,9 @@ import { NewsDataProvider } from './adapters/newsdata.js';
 import { GNewsProvider } from './adapters/gnews.js';
 import { TheNewsApiProvider } from './adapters/thenewsapi.js';
 import { MarketauxProvider } from './adapters/marketaux.js';
+import { GdeltProvider, fetchGdeltTimeline } from './adapters/gdelt.js';
+
+export { fetchGdeltTimeline };
 
 // Initialize providers
 const providers = {
@@ -10,7 +13,8 @@ const providers = {
     newsdata: new NewsDataProvider(),
     gnews: new GNewsProvider(),
     thenewsapi: new TheNewsApiProvider(),
-    marketaux: new MarketauxProvider()
+    marketaux: new MarketauxProvider(),
+    gdelt: new GdeltProvider(),
 };
 
 export async function fetchWithRetry(url, retries = 3, backoff = 300) {
