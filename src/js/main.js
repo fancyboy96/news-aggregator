@@ -25,7 +25,9 @@ import {
     renderResults,
     appendResults,
     updateSelectionUI,
-    showWarning
+    showWarning,
+    renderTrendingTopics,
+    renderCoveragePulse
 } from './ui.js';
 import {
     fetchNews
@@ -98,6 +100,9 @@ function init() {
     } else {
         updateProviderUI();
     }
+
+    // Fetch trending topics in the background (non-blocking)
+    setTimeout(fetchAndRenderTrending, 200);
 }
 
 // --- Event Listeners ---
@@ -266,6 +271,7 @@ if (els.appLogo) {
         els.loadMoreContainer.classList.add('hidden');
         els.selectionToolbar.classList.add('hidden');
         els.errorMessage.classList.add('hidden');
+        els.coveragePulse.classList.add('hidden');
 
         // Reset counts
         ['newsapi', 'newsdata', 'gnews', 'thenewsapi', 'marketaux'].forEach(p => {
@@ -337,6 +343,7 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
         els.digestSection.classList.add('hidden');
         els.actionBar.classList.add('hidden');
         els.loadMoreContainer.classList.add('hidden');
+        els.coveragePulse.classList.add('hidden');
         setSelectionMode(false);
         els.resultsGrid.innerHTML = ''; // Clear previous results
 
@@ -463,6 +470,8 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
                 els.resultsGrid.classList.remove('hidden');
                 els.actionBar.classList.remove('hidden');
                 els.loadMoreContainer.classList.remove('hidden');
+
+                renderCoveragePulse(mergedNew, query);
 
                 if (failedProviders.length > 0) {
                     showWarning(`${failedProviders.length} provider(s) failed to respond. Results may be incomplete.`);
@@ -616,6 +625,64 @@ function toggleArticleSelection(index) {
             card.classList.remove('selected');
             checkbox.checked = false;
         }
+    }
+}
+
+// ─── Trending Topics ─────────────────────────────────────────────────────────
+
+const STOP_WORDS = new Set([
+    'the','a','an','and','or','but','in','on','at','to','for','of','with','by',
+    'from','is','are','was','were','be','been','have','has','had','will','would',
+    'could','should','may','might','can','not','no','its','that','this','it',
+    'they','them','their','he','she','his','her','we','our','you','your','after',
+    'over','about','into','as','if','then','so','amid','gets','says','said',
+    'year','years','first','last','more','just','also','still','even','only',
+    'new','now','back','make','made','time','report','news','top','show','deal',
+    'take','come','here','two','three','five','ten','what','when','how','why',
+    'who','where','than','before','during','since','while','within','without',
+    'next','week','month','day','days','high','free','live','off','out','up',
+    'one','man','woman','people','world','against','across','under','between',
+]);
+
+function extractTrendingKeywords(articles) {
+    const scores = {};
+
+    articles.forEach(article => {
+        if (!article.title) return;
+        const words = article.title.split(/\s+/);
+        words.forEach((raw, idx) => {
+            // Detect proper nouns: capitalised but not the first word of the title
+            const isProper = idx > 0 && /^[A-Z]/.test(raw);
+            const word = raw.toLowerCase().replace(/[^a-z]/g, '');
+            if (word.length < 4 || STOP_WORDS.has(word)) return;
+            scores[word] = (scores[word] || 0) + (isProper ? 3 : 1);
+        });
+    });
+
+    return Object.entries(scores)
+        .filter(([, s]) => s >= 3)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 10)
+        .map(([w]) => w.charAt(0).toUpperCase() + w.slice(1));
+}
+
+async function fetchAndRenderTrending() {
+    try {
+        const data = await fetchNews('newsapi', '', {
+            pageSize: '50', language: 'en', sortBy: 'popularity'
+        });
+        const keywords = extractTrendingKeywords(data.articles || []);
+        renderTrendingTopics(keywords);
+
+        // Attach click handlers to trending chips
+        document.querySelectorAll('.trending-chip').forEach(btn => {
+            btn.addEventListener('click', () => {
+                els.searchInput.value = btn.dataset.query;
+                performSearch(btn.dataset.query, true);
+            });
+        });
+    } catch (e) {
+        // Trending is non-critical — fail silently
     }
 }
 

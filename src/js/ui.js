@@ -38,7 +38,10 @@ export const els = {
     moonIcon: document.getElementById('moonIcon'),
     get browseTopicsBtn() { return document.getElementById('browseTopicsBtn'); },
     get quickCategories() { return document.getElementById('quickCategories'); },
-    appLogo: document.getElementById('appLogo')
+    appLogo: document.getElementById('appLogo'),
+    trendingSection: document.getElementById('trendingSection'),
+    trendingChips: document.getElementById('trendingChips'),
+    coveragePulse: document.getElementById('coveragePulse')
 };
 
 export function updateProviderUI() {
@@ -269,4 +272,98 @@ function generateArticlesHtml(articles, startIndex, query, isSelectionMode, sele
             </article>
         `;
     }).join('');
+}
+
+// ─── Trending Topics ─────────────────────────────────────────────────────────
+
+export function renderTrendingTopics(keywords) {
+    if (!els.trendingChips || !els.trendingSection) return;
+
+    if (!keywords || keywords.length === 0) {
+        els.trendingSection.classList.add('hidden');
+        return;
+    }
+
+    els.trendingChips.innerHTML = keywords.map(word => `
+        <button class="trending-chip px-3 py-1 rounded-full bg-slate-100 dark:bg-slate-800/80 text-slate-600 dark:text-slate-300 text-xs font-medium hover:bg-indigo-100 dark:hover:bg-indigo-900/50 hover:text-indigo-600 dark:hover:text-indigo-400 border border-slate-200/60 dark:border-slate-700/50 transition-colors"
+            data-query="${word}">
+            ${word}
+        </button>
+    `).join('');
+
+    els.trendingSection.classList.remove('hidden');
+}
+
+// ─── Coverage Pulse ───────────────────────────────────────────────────────────
+
+function buildSparklineSvg(data) {
+    const W = 64, H = 24, pad = 2;
+    const max = Math.max(...data, 1);
+    const step = (W - pad * 2) / (data.length - 1);
+
+    const pts = data.map((v, i) => {
+        const x = (pad + i * step).toFixed(1);
+        const y = (H - pad - (v / max) * (H - pad * 2)).toFixed(1);
+        return `${x},${y}`;
+    });
+
+    const lastPt = pts[pts.length - 1].split(',');
+    const areaPath = `${pad},${H} ${pts.join(' ')} ${W - pad},${H}`;
+
+    return `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg" class="shrink-0">
+        <defs>
+            <linearGradient id="sg" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="currentColor" stop-opacity="0.25"/>
+                <stop offset="100%" stop-color="currentColor" stop-opacity="0"/>
+            </linearGradient>
+        </defs>
+        <polygon points="${areaPath}" fill="url(#sg)"/>
+        <polyline points="${pts.join(' ')}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="${lastPt[0]}" cy="${lastPt[1]}" r="2.5" fill="currentColor"/>
+    </svg>`;
+}
+
+export function renderCoveragePulse(articles, query) {
+    if (!els.coveragePulse) return;
+
+    const now = Date.now();
+    const DAY = 86400000;
+    const buckets = Array(7).fill(0);
+
+    articles.forEach(a => {
+        const daysAgo = Math.floor((now - new Date(a.publishedAt).getTime()) / DAY);
+        if (daysAgo >= 0 && daysAgo < 7) buckets[6 - daysAgo]++;
+    });
+
+    const total = buckets.reduce((a, b) => a + b, 0);
+    if (total === 0) {
+        els.coveragePulse.classList.add('hidden');
+        return;
+    }
+
+    // Trend direction: compare last 2 days vs daily average of prior 5
+    const recent = buckets.slice(5).reduce((a, b) => a + b, 0);
+    const olderAvg = (buckets.slice(0, 5).reduce((a, b) => a + b, 0) / 5) * 2;
+    let trendLabel, trendColor;
+    if (olderAvg === 0 && recent > 0) {
+        trendLabel = 'Breaking'; trendColor = 'text-rose-500 dark:text-rose-400';
+    } else if (recent > olderAvg * 1.5) {
+        trendLabel = '↑ Rising'; trendColor = 'text-emerald-600 dark:text-emerald-400';
+    } else if (recent < olderAvg * 0.5) {
+        trendLabel = '↓ Fading'; trendColor = 'text-slate-400';
+    } else {
+        trendLabel = '→ Steady'; trendColor = 'text-amber-500 dark:text-amber-400';
+    }
+
+    const dayLabels = ['6d', '5d', '4d', '3d', '2d', '1d', 'Today'];
+    const tooltip = buckets.map((n, i) => `${dayLabels[i]}: ${n}`).join(' · ');
+
+    els.coveragePulse.innerHTML = `
+        <span class="text-indigo-500 dark:text-indigo-400" title="${tooltip}">
+            ${buildSparklineSvg(buckets)}
+        </span>
+        <span class="text-xs font-semibold ${trendColor}">${trendLabel}</span>
+        <span class="text-xs text-slate-400 dark:text-slate-500">${total} articles · 7 days</span>
+    `;
+    els.coveragePulse.classList.remove('hidden');
 }
