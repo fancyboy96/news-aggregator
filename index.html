@@ -20,18 +20,19 @@
     <div class="max-w-6xl mx-auto px-6 py-16">
 
         <!-- Header -->
-        <header class="text-center mb-16 animate-fade-in relative">
+        <header class="mb-16 animate-fade-in relative">
 
-            <!-- Decorative blur blobs -->
-            <div class="absolute inset-0 overflow-hidden pointer-events-none -z-10" aria-hidden="true">
-                <div class="absolute -top-20 left-1/2 -translate-x-1/2 w-96 h-96 bg-indigo-500/10 dark:bg-indigo-500/20 rounded-full blur-3xl"></div>
-                <div class="absolute -top-10 left-1/4 w-64 h-64 bg-violet-500/8 dark:bg-violet-500/15 rounded-full blur-3xl"></div>
-                <div class="absolute -top-10 right-1/4 w-48 h-48 bg-blue-500/6 dark:bg-blue-500/12 rounded-full blur-3xl"></div>
+            <!-- Decorative blur blobs — no overflow-hidden so blur fades naturally -->
+            <div class="absolute inset-0 pointer-events-none -z-10" aria-hidden="true">
+                <div class="absolute -top-24 left-1/2 -translate-x-1/2 w-[700px] h-[700px] bg-indigo-500/[0.09] dark:bg-indigo-500/[0.18] rounded-full blur-[100px]"></div>
+                <div class="absolute -top-16 left-1/4 w-[500px] h-[500px] bg-violet-500/[0.07] dark:bg-violet-500/[0.12] rounded-full blur-[90px]"></div>
+                <div class="absolute -top-12 right-1/4 w-[400px] h-[400px] bg-blue-500/[0.05] dark:bg-blue-500/[0.09] rounded-full blur-[80px]"></div>
             </div>
 
-            <div class="absolute top-0 right-0">
+            <!-- Top bar: theme toggle in its own row, never overlaps the logo -->
+            <div class="flex justify-end mb-6">
                 <button id="themeToggleBtn"
-                    class="p-2 rounded-full hover:bg-white/80 dark:hover:bg-slate-800/80 transition-colors text-slate-400 dark:text-slate-500 backdrop-blur-sm">
+                    class="p-2 rounded-full hover:bg-white/80 dark:hover:bg-slate-800/80 transition-colors text-slate-400 dark:text-slate-500">
                     <!-- Sun Icon (for Dark Mode) -->
                     <svg id="sunIcon" class="w-5 h-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -47,15 +48,17 @@
                 </button>
             </div>
 
-            <h1 id="appLogo"
-                class="text-6xl font-extrabold tracking-tight mb-3 cursor-pointer hover:opacity-90 transition-opacity">
-                <span class="gradient-text">Currents</span><span class="text-indigo-400">.</span>
-            </h1>
-            <p class="text-sm text-slate-400 dark:text-slate-500 font-medium tracking-wide">Your intelligent news feed</p>
+            <div class="text-center">
+                <h1 id="appLogo"
+                    class="text-6xl font-extrabold tracking-tight mb-3 cursor-pointer hover:opacity-90 transition-opacity inline-block">
+                    <span class="gradient-text">Currents</span><span class="text-indigo-400">.</span>
+                </h1>
+                <p class="text-sm text-slate-400 dark:text-slate-500 font-medium tracking-wide">Your intelligent news feed</p>
 
-            <div
-                class="mt-5 inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border border-slate-200/80 dark:border-slate-700/80 shadow-sm text-xs font-medium text-slate-400 dark:text-slate-500">
-                <span id="currentProviderDisplay">Provider: NewsAPI</span>
+                <div
+                    class="mt-5 inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-white/70 dark:bg-slate-800/70 backdrop-blur-sm border border-slate-200/80 dark:border-slate-700/80 shadow-sm text-xs font-medium text-slate-400 dark:text-slate-500">
+                    <span id="currentProviderDisplay">Provider: NewsAPI</span>
+                </div>
             </div>
         </header>
 
