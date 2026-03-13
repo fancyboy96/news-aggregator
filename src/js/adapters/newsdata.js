@@ -8,21 +8,19 @@ export class NewsDataProvider extends NewsProvider {
 
     async fetch(query, options = {}) {
         const {
-            page = 1,
             language,
             country, // NewsData supports 'country'
-            sortBy, // NewsData doesn't support sorting in free tier easily, but we'll check
             pageSize, // NewsData uses 'size' (max 10 free)
             domains,
             excludeDomains,
-            category
+            category,
+            cursor // NewsData cursor token for pagination
         } = options;
 
         const params = new URLSearchParams();
         params.append('q', query);
-        // NewsData uses cursor-based pagination. 'page' must be a cursor string, not a number.
-        // We cannot use page numbers. For now, we omit 'page' unless we implement cursor logic.
-        if (typeof page === 'string') params.append('page', page);
+        // NewsData uses cursor-based pagination — pass the cursor token if we have one
+        if (cursor) params.append('page', cursor);
 
         params.append('provider', 'newsdata');
 
@@ -45,7 +43,8 @@ export class NewsDataProvider extends NewsProvider {
 
         return {
             totalResults: data.totalResults,
-            articles: (data.results || []).map(article => this.normalize(article))
+            articles: (data.results || []).map(article => this.normalize(article)),
+            nextCursor: data.nextPage || null
         };
     }
 

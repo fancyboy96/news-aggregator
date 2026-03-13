@@ -12,7 +12,8 @@ const state = {
     currentPage: 1,
     providers: ['newsapi', 'newsdata', 'gnews'], // Default active providers
     theme: 'light',
-    category: ''
+    category: '',
+    providerCursors: {} // cursor-based pagination state keyed by provider name
 };
 
 const listeners = new Set();

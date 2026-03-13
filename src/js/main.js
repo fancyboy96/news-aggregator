@@ -254,7 +254,8 @@ if (els.appLogo) {
             currentPage: 1,
             isSearching: false,
             isSelectionMode: false,
-            selectedArticleIndices: new Set()
+            selectedArticleIndices: new Set(),
+            providerCursors: {}
         });
 
         // 3. Reset UI
@@ -331,7 +332,7 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
     setError(null);
 
     if (!isLoadMore) {
-        store.set({ currentPage: 1 });
+        store.set({ currentPage: 1, providerCursors: {} });
         els.resultsGrid.classList.add('hidden');
         els.digestSection.classList.add('hidden');
         els.actionBar.classList.add('hidden');
@@ -357,6 +358,7 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
         const currentPage = store.get('currentPage');
 
         // Gather common options
+        const providerCursors = store.get('providerCursors');
         const options = {
             page: currentPage,
             sortBy: els.sortByInput.value,
@@ -379,7 +381,16 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
         // Fetch from all selected providers in parallel
         const promises = providers.map(async providerName => {
             try {
-                const data = await fetchNews(providerName, query, options);
+                // Pass any stored cursor for cursor-based providers (e.g. NewsData)
+                const providerOptions = providerCursors[providerName]
+                    ? { ...options, cursor: providerCursors[providerName] }
+                    : options;
+                const data = await fetchNews(providerName, query, providerOptions);
+
+                // Store next cursor if the provider returned one
+                if (data.nextCursor) {
+                    store.set({ providerCursors: { ...store.get('providerCursors'), [providerName]: data.nextCursor } });
+                }
 
                 // Update total count (only on first page)
                 if (!isLoadMore) {

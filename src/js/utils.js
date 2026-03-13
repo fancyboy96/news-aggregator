@@ -94,7 +94,12 @@ export function generateDigest(articles, query) {
     `;
 
     articles.forEach(article => {
-        const domain = new URL(article.url).hostname.replace('www.', '');
+        let domain;
+        try {
+            domain = new URL(article.url).hostname.replace('www.', '');
+        } catch(e) {
+            domain = article.url;
+        }
 
         html += `
         <div style="margin-bottom: 30px; padding-bottom: 30px; border-bottom: 1px solid #f1f5f9;">
