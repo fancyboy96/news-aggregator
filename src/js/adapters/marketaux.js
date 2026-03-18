@@ -47,20 +47,21 @@ export class MarketauxProvider extends NewsProvider {
 
         return {
             totalResults: data.meta ? data.meta.found : 0,
-            articles: (data.data || []).map(article => this.normalize(article))
+            articles: (data.data || []).map(article => this.normalize(article)).filter(Boolean)
         };
     }
 
     normalize(item) {
+        if (!item || typeof item !== 'object') return null;
         return super.normalize({
             source: { name: item.source || 'Marketaux' },
             author: null,
-            title: item.title,
-            description: item.description || item.snippet,
-            url: item.url,
-            urlToImage: item.image_url,
-            publishedAt: item.published_at,
-            content: item.snippet
+            title: item.title || 'No Title',
+            description: item.description || item.snippet || null,
+            url: item.url || '#',
+            urlToImage: item.image_url || null,
+            publishedAt: item.published_at || new Date().toISOString(),
+            content: item.snippet || null
         });
     }
 }

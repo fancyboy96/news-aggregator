@@ -181,11 +181,23 @@ function getRelativeTime(dateStr) {
     return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
+function sanitizeUrl(url) {
+    if (!url) return '#';
+    try {
+        const parsed = new URL(url);
+        if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return '#';
+        return url;
+    } catch {
+        return '#';
+    }
+}
+
 function generateArticlesHtml(articles, startIndex, query, isSelectionMode, selectedIndices) {
     return articles.map((article, i) => {
         const index = startIndex + i;
         const timeAgo = getRelativeTime(article.publishedAt);
-        const image = article.urlToImage || 'https://placehold.co/600x400/f1f5f9/94a3b8?text=No+Image';
+        const image = sanitizeUrl(article.urlToImage) || 'https://placehold.co/600x400/f1f5f9/94a3b8?text=No+Image';
+        const articleUrl = sanitizeUrl(article.url);
         const staggerDelay = (i % 9) * 55;
 
         // Apply highlighting
@@ -245,7 +257,7 @@ function generateArticlesHtml(articles, startIndex, query, isSelectionMode, sele
                     </div>
                     
                     <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-3 leading-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
-                        <a href="${article.url}" target="_blank" class="focus:outline-none ${isSelectionMode ? 'pointer-events-none' : ''}">
+                        <a href="${articleUrl}" target="_blank" rel="noopener noreferrer" class="focus:outline-none ${isSelectionMode ? 'pointer-events-none' : ''}">
                             ${titleHtml}
                         </a>
                     </h3>
@@ -257,13 +269,13 @@ function generateArticlesHtml(articles, startIndex, query, isSelectionMode, sele
                     ${contentSnippetHtml}
                     
                     <div class="mt-auto pt-4 border-t border-slate-50 dark:border-slate-700 flex justify-between items-center">
-                        <a href="${article.url}" target="_blank" class="text-indigo-600 dark:text-indigo-400 text-sm font-bold hover:text-indigo-700 dark:hover:text-indigo-300 inline-flex items-center gap-1 group/link ${isSelectionMode ? 'pointer-events-none opacity-50' : ''}">
+                        <a href="${articleUrl}" target="_blank" rel="noopener noreferrer" class="text-indigo-600 dark:text-indigo-400 text-sm font-bold hover:text-indigo-700 dark:hover:text-indigo-300 inline-flex items-center gap-1 group/link ${isSelectionMode ? 'pointer-events-none opacity-50' : ''}">
                             Read full story 
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transform group-hover/link:translate-x-1 transition-transform" viewBox="0 0 20 20" fill="currentColor">
                                 <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
                             </svg>
                         </a>
-                        <button onclick="window.shareArticle('${article.url}', event)" class="text-slate-400 hover:text-indigo-600 dark:text-slate-500 dark:hover:text-indigo-400 transition-colors p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 ${isSelectionMode ? 'pointer-events-none opacity-50' : ''}" title="Copy Link">
+                        <button onclick="window.shareArticle('${articleUrl}', event)" class="text-slate-400 hover:text-indigo-600 dark:text-slate-500 dark:hover:text-indigo-400 transition-colors p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 ${isSelectionMode ? 'pointer-events-none opacity-50' : ''}" title="Copy Link">
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                             </svg>

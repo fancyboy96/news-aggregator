@@ -22,6 +22,7 @@ export class NewsProvider {
      * @returns {object}
      */
     normalize(rawArticle) {
+        if (!rawArticle || typeof rawArticle !== 'object') return null;
         return {
             source: { name: this.name },
             author: null,

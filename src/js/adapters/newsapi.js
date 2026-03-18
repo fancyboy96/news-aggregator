@@ -54,20 +54,21 @@ export class NewsApiProvider extends NewsProvider {
 
         return {
             totalResults: data.totalResults,
-            articles: (data.articles || []).map(article => this.normalize(article))
+            articles: (data.articles || []).map(article => this.normalize(article)).filter(Boolean)
         };
     }
 
     normalize(article) {
+        if (!article || typeof article !== 'object') return null;
         return super.normalize({
-            source: article.source,
-            author: article.author,
-            title: article.title,
-            description: article.description,
-            url: article.url,
-            urlToImage: article.urlToImage,
-            publishedAt: article.publishedAt,
-            content: article.content
+            source: article.source && typeof article.source === 'object' ? article.source : { name: 'NewsAPI' },
+            author: article.author || null,
+            title: article.title || 'No Title',
+            description: article.description || null,
+            url: article.url || '#',
+            urlToImage: article.urlToImage || null,
+            publishedAt: article.publishedAt || new Date().toISOString(),
+            content: article.content || null
         });
     }
 }

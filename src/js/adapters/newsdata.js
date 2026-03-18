@@ -43,21 +43,22 @@ export class NewsDataProvider extends NewsProvider {
 
         return {
             totalResults: data.totalResults,
-            articles: (data.results || []).map(article => this.normalize(article)),
+            articles: (data.results || []).map(article => this.normalize(article)).filter(Boolean),
             nextCursor: data.nextPage || null
         };
     }
 
     normalize(item) {
+        if (!item || typeof item !== 'object') return null;
         return super.normalize({
             source: { name: item.source_id || 'NewsData' },
-            author: item.creator ? item.creator[0] : null,
-            title: item.title,
-            description: item.description,
-            url: item.link,
-            urlToImage: item.image_url,
-            publishedAt: item.pubDate,
-            content: item.content
+            author: Array.isArray(item.creator) && item.creator.length ? item.creator[0] : null,
+            title: item.title || 'No Title',
+            description: item.description || null,
+            url: item.link || '#',
+            urlToImage: item.image_url || null,
+            publishedAt: item.pubDate || new Date().toISOString(),
+            content: item.content || null
         });
     }
 }

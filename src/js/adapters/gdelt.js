@@ -88,17 +88,18 @@ export class GdeltProvider extends NewsProvider {
         const articles = data.articles || [];
         return {
             totalResults: articles.length,
-            articles: articles.map(a => this.normalize(a)),
+            articles: articles.map(a => this.normalize(a)).filter(Boolean),
         };
     }
 
     normalize(item) {
+        if (!item || typeof item !== 'object') return null;
         return super.normalize({
             source:      { name: item.domain || 'GDELT' },
             author:      null,
             title:       item.title || 'No Title',
             description: null,
-            url:         item.url,
+            url:         item.url || '#',
             urlToImage:  item.socialimage || null,
             publishedAt: parseSeen(item.seendate),
             content:     null,

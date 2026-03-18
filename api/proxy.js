@@ -1,217 +1,73 @@
+import { buildProxyUrl } from './proxy-core.js';
+
 export const config = {
   runtime: 'edge',
 };
 
+// Simple in-memory rate limiter (per Edge Function instance).
+// Limits each IP to RATE_LIMIT_MAX requests per RATE_LIMIT_WINDOW ms.
+const rateLimitMap = new Map();
+const RATE_LIMIT_WINDOW = 60 * 1000; // 1 minute
+const RATE_LIMIT_MAX = 60; // requests per window
+
+function isRateLimited(ip) {
+  const now = Date.now();
+  const windowStart = now - RATE_LIMIT_WINDOW;
+  const timestamps = (rateLimitMap.get(ip) || []).filter(t => t > windowStart);
+  timestamps.push(now);
+  rateLimitMap.set(ip, timestamps);
+  return timestamps.length > RATE_LIMIT_MAX;
+}
+
 export default async function handler(request) {
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0].trim()
+    || request.headers.get('x-real-ip')
+    || 'unknown';
+
+  if (isRateLimited(ip)) {
+    return new Response(JSON.stringify({ status: 'error', message: 'Too many requests' }), {
+      status: 429,
+      headers: { 'Content-Type': 'application/json', 'Retry-After': '60' },
+    });
+  }
+
   const url = new URL(request.url);
   const searchParams = url.searchParams;
+  const provider = searchParams.get('provider') || 'newsapi';
 
-  // Get the provider from the request
-  const provider = searchParams.get('provider') || 'newsapi'; // Default to newsapi
+  const { apiUrl, errorMessage } = buildProxyUrl(searchParams, key => process.env[key]);
 
-  let apiKey;
-  let apiUrl;
-
-  if (provider === 'newsdata') {
-    // NewsData.io API
-    apiKey = process.env.NEWSDATA_KEY;
-    if (!apiKey) {
-      return new Response(JSON.stringify({ status: 'error', message: 'Server configuration error: NewsData API Key missing' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    // https://newsdata.io/api/1/news?apikey=YOUR_API_KEY&q=pizza
-    apiUrl = new URL('https://newsdata.io/api/1/news');
-
-    // Forward params
-    searchParams.forEach((value, key) => {
-      if (key !== 'apiKey' && key !== 'provider' && value) {
-        // NewsData free tier limit is 10
-        if (key === 'size' && parseInt(value) > 10) {
-          apiUrl.searchParams.append(key, '10');
-        } else {
-          apiUrl.searchParams.append(key, value);
-        }
-      }
+  if (errorMessage) {
+    return new Response(JSON.stringify({ status: 'error', message: errorMessage }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
     });
-    // NewsData.io expects 'apikey' (lowercase)
-    apiUrl.searchParams.append('apikey', apiKey);
-
-  } else if (provider === 'gnews') {
-    // GNews API
-    apiKey = process.env.GNEWS_API_KEY;
-    if (!apiKey) {
-      return new Response(JSON.stringify({ status: 'error', message: 'Server configuration error: GNews API Key missing' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    const q = searchParams.get('q');
-    if (q) {
-      apiUrl = new URL('https://gnews.io/api/v4/search');
-    } else {
-      apiUrl = new URL('https://gnews.io/api/v4/top-headlines');
-    }
-
-    // Forward params
-    searchParams.forEach((value, key) => {
-      if (key !== 'apiKey' && key !== 'provider' && value) {
-        apiUrl.searchParams.append(key, value);
-      }
-    });
-
-    // GNews expects 'apikey'
-    apiUrl.searchParams.append('apikey', apiKey);
-
-  } else if (provider === 'thenewsapi') {
-    // TheNewsAPI
-    apiKey = process.env.THENEWSAPI_KEY;
-    if (!apiKey) {
-      return new Response(JSON.stringify({ status: 'error', message: 'Server configuration error: TheNewsAPI Key missing' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    // https://api.thenewsapi.com/v1/news/all?api_token=API_TOKEN&search=btc
-    apiUrl = new URL('https://api.thenewsapi.com/v1/news/all');
-
-    // Forward params
-    searchParams.forEach((value, key) => {
-      if (key !== 'apiKey' && key !== 'provider' && value) {
-        if (key === 'q') {
-          apiUrl.searchParams.append('search', value);
-        } else {
-          apiUrl.searchParams.append(key, value);
-        }
-      }
-    });
-
-    // TheNewsAPI expects 'api_token'
-    apiUrl.searchParams.append('api_token', apiKey);
-
-  } else if (provider === 'marketaux') {
-    // Marketaux
-    apiKey = process.env.MARKETAUX_API_TOKEN;
-    if (!apiKey) {
-      return new Response(JSON.stringify({ status: 'error', message: 'Server configuration error: Marketaux API Token missing' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    // https://api.marketaux.com/v1/news/all?api_token=API_TOKEN&search=btc
-    apiUrl = new URL('https://api.marketaux.com/v1/news/all');
-
-    // Forward params
-    searchParams.forEach((value, key) => {
-      if (key !== 'apiKey' && key !== 'provider' && value) {
-        if (key === 'q') {
-          apiUrl.searchParams.append('search', value);
-        } else {
-          apiUrl.searchParams.append(key, value);
-        }
-      }
-    });
-
-    // Marketaux expects 'api_token'
-    apiUrl.searchParams.append('api_token', apiKey);
-
-  } else if (provider === 'gdelt') {
-    // GDELT DOC API — free, no API key required
-    apiUrl = new URL('https://api.gdeltproject.org/api/v2/doc/doc');
-    searchParams.forEach((value, key) => {
-      if (key !== 'provider' && value) {
-        apiUrl.searchParams.append(key, value);
-      }
-    });
-
-  } else {
-    // NewsAPI.org API (Default)
-    apiKey = process.env.NEWSAPI_KEY;
-    if (!apiKey) {
-      return new Response(JSON.stringify({ status: 'error', message: 'Server configuration error: NewsAPI Key missing' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
-    }
-
-    const category = searchParams.get('category');
-    const q = searchParams.get('q');
-    const domains = searchParams.get('domains');
-
-    // Logic to choose endpoint
-    let endpoint = 'everything';
-    let excludeKeys = [];
-
-    if (category) {
-      endpoint = 'top-headlines';
-      // top-headlines ignores: from, to, domains, excludeDomains, sortBy, searchIn
-      excludeKeys = ['from', 'to', 'domains', 'excludeDomains', 'sortBy', 'searchIn'];
-    } else if (!q && !domains) {
-      // No query and no domains -> must use top-headlines (e.g. just country)
-      endpoint = 'top-headlines';
-      excludeKeys = ['from', 'to', 'domains', 'excludeDomains', 'sortBy', 'searchIn'];
-    } else {
-      // Default to everything
-      endpoint = 'everything';
-      // everything ignores: country, category
-      excludeKeys = ['country', 'category'];
-    }
-
-    apiUrl = new URL(`https://newsapi.org/v2/${endpoint}`);
-
-    // Forward params
-    searchParams.forEach((value, key) => {
-      if (key !== 'provider' && key !== 'apiKey' && value && !excludeKeys.includes(key)) {
-        apiUrl.searchParams.append(key, value);
-      }
-    });
-    // NewsAPI expects 'apiKey'
-    apiUrl.searchParams.append('apiKey', apiKey);
   }
 
   try {
     const response = await fetch(apiUrl.toString(), {
-      headers: {
-        'User-Agent': 'NewsAggregator/1.0' // NewsAPI requires a User-Agent
-      }
+      headers: { 'User-Agent': 'NewsAggregator/1.0' }
     });
 
     // --- Server-Side Logging for API Usage ---
     const usageHeaders = {};
     const headerKeys = [
-      'x-ratelimit-remaining',
-      'x-ratelimit-limit',
-      'x-quota-remaining',
-      'x-quota-limit',
-      'x-usagelimit-remaining',
-      'x-usagelimit-limit'
+      'x-ratelimit-remaining', 'x-ratelimit-limit',
+      'x-quota-remaining',     'x-quota-limit',
+      'x-usagelimit-remaining','x-usagelimit-limit'
     ];
-
     headerKeys.forEach(key => {
-      if (response.headers.has(key)) {
-        usageHeaders[key] = response.headers.get(key);
-      }
+      if (response.headers.has(key)) usageHeaders[key] = response.headers.get(key);
     });
-
     if (Object.keys(usageHeaders).length > 0) {
       console.log(`[API Usage] Provider: ${provider}`, JSON.stringify(usageHeaders));
     }
     // -----------------------------------------
 
     const data = await response.json();
-
     return new Response(JSON.stringify(data), {
       status: response.status,
-      headers: {
-        'Content-Type': 'application/json',
-        // Add CORS headers just in case, though same-origin is default
-        'Access-Control-Allow-Origin': '*',
-      },
+      headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
     return new Response(JSON.stringify({ status: 'error', message: error.message }), {

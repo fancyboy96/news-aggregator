@@ -65,20 +65,21 @@ export class GNewsProvider extends NewsProvider {
 
         return {
             totalResults: data.totalArticles,
-            articles: (data.articles || []).map(article => this.normalize(article))
+            articles: (data.articles || []).map(article => this.normalize(article)).filter(Boolean)
         };
     }
 
     normalize(item) {
+        if (!item || typeof item !== 'object') return null;
         return super.normalize({
             source: { name: (item.source && item.source.name) || 'GNews' },
             author: null,
-            title: item.title,
-            description: item.description,
-            url: item.url,
-            urlToImage: item.image,
-            publishedAt: item.publishedAt,
-            content: item.content
+            title: item.title || 'No Title',
+            description: item.description || null,
+            url: item.url || '#',
+            urlToImage: item.image || null,
+            publishedAt: item.publishedAt || new Date().toISOString(),
+            content: item.content || null
         });
     }
 }
