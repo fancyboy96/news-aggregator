@@ -23,7 +23,7 @@ export class NewsProvider {
      */
     normalize(rawArticle) {
         if (!rawArticle || typeof rawArticle !== 'object') return null;
-        return {
+        const result = {
             source: { name: this.name },
             author: null,
             title: 'No Title',
@@ -35,5 +35,10 @@ export class NewsProvider {
             apiSource: this.name,
             ...rawArticle
         };
+        // Ensure publishedAt is a valid date; invalid values break sort logic
+        if (isNaN(new Date(result.publishedAt).getTime())) {
+            result.publishedAt = new Date().toISOString();
+        }
+        return result;
     }
 }

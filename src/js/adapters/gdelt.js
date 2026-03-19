@@ -55,7 +55,7 @@ export class GdeltProvider extends NewsProvider {
         params.append('format', 'json');
 
         if (query) params.append('query', query);
-        params.append('maxrecords', String(Math.min(parseInt(pageSize) || 25, 250)));
+        params.append('maxrecords', String(Math.min(parseInt(pageSize, 10) || 25, 250)));
 
         // Sorting
         params.append('sort', sortBy === 'relevancy' ? 'Relevance' : 'DateDesc');

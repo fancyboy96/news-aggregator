@@ -64,28 +64,33 @@ function init() {
 
     // Restore state from URL if present
     const params = new URLSearchParams(window.location.search);
-    const query = params.get('q');
+    // Cap lengths to prevent DoS via crafted URLs
+    const getParam = (key, max = 200) => {
+        const v = params.get(key);
+        return v ? v.slice(0, max) : null;
+    };
+    const query = getParam('q', 500);
 
     if (query) {
         // Restore inputs
         els.searchInput.value = query;
 
-        if (params.has('sortBy')) els.sortByInput.value = params.get('sortBy');
-        if (params.has('category')) els.categoryInput.value = params.get('category');
-        if (params.has('language')) els.languageInput.value = params.get('language');
+        if (params.has('sortBy')) els.sortByInput.value = getParam('sortBy', 50);
+        if (params.has('category')) els.categoryInput.value = getParam('category', 50);
+        if (params.has('language')) els.languageInput.value = getParam('language', 10);
         if (params.has('country')) {
-            const countries = params.get('country').split(',');
+            const countries = getParam('country', 200).split(',');
             countrySelector.setValue(countries);
         }
-        if (params.has('pageSize')) els.pageSizeInput.value = params.get('pageSize');
-        if (params.has('from')) els.fromInput.value = params.get('from');
-        if (params.has('to')) els.toInput.value = params.get('to');
-        if (params.has('domains')) els.domainsInput.value = params.get('domains');
-        if (params.has('excludeDomains')) els.excludeDomainsInput.value = params.get('excludeDomains');
+        if (params.has('pageSize')) els.pageSizeInput.value = getParam('pageSize', 5);
+        if (params.has('from')) els.fromInput.value = getParam('from', 20);
+        if (params.has('to')) els.toInput.value = getParam('to', 20);
+        if (params.has('domains')) els.domainsInput.value = getParam('domains', 500);
+        if (params.has('excludeDomains')) els.excludeDomainsInput.value = getParam('excludeDomains', 500);
 
         // Restore providers
         if (params.has('provider')) {
-            const providers = params.get('provider').split(',');
+            const providers = getParam('provider', 100).split(',');
             els.providerCheckboxes.forEach(cb => {
                 cb.checked = providers.includes(cb.value);
             });
@@ -93,7 +98,7 @@ function init() {
 
         // Restore "Search In" checkboxes
         if (params.has('searchIn')) {
-            const searchInValues = params.get('searchIn').split(',');
+            const searchInValues = getParam('searchIn', 100).split(',');
             document.querySelectorAll('input[name="searchIn"]').forEach(cb => {
                 cb.checked = searchInValues.includes(cb.value);
             });
@@ -430,7 +435,8 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
             }
         });
 
-        const resultsArrays = await Promise.all(promises);
+        const settled = await Promise.allSettled(promises);
+        const resultsArrays = settled.map(r => (r.status === 'fulfilled' ? r.value : []));
 
         const mergedNew = mergeResults(resultsArrays, options.sortBy, query);
 
@@ -447,7 +453,7 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
                         seenUrls.add(u.origin + u.pathname.replace(/\/$/, ''));
                     } catch(e) { seenUrls.add(a.url); }
                 }
-                if (a.title) seenTitles.add(a.title.toLowerCase().replace(/[^a-z0-9]/g, ''));
+                if (a.title) seenTitles.add(a.title.toLowerCase().replace(NON_ALPHANUM_RE, ''));
             });
 
             const trulyNew = mergedNew.filter(a => {
@@ -458,7 +464,7 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
                         urlKey = u.origin + u.pathname.replace(/\/$/, '');
                     } catch(e) { urlKey = a.url; }
                 }
-                const titleKey = a.title ? a.title.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
+                const titleKey = a.title ? a.title.toLowerCase().replace(NON_ALPHANUM_RE, '') : '';
                 if (urlKey && seenUrls.has(urlKey)) return false;
                 if (titleKey && seenTitles.has(titleKey)) return false;
                 return true;
@@ -492,7 +498,7 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
                 if (query) {
                     fetchGdeltTimeline(query).then(buckets => {
                         if (buckets) renderCoveragePulse([], query, buckets);
-                    }).catch(() => {});
+                    }).catch(e => console.warn('[GDELT] Timeline fetch failed:', e.message));
                 }
 
                 if (failedProviders.length > 0) {
@@ -551,7 +557,6 @@ function scoreArticle(article, query) {
 function mergeResults(resultsArrays, sortBy = 'publishedAt', query = '') {
     // Flatten array of arrays
     let merged = resultsArrays.flat();
-    console.log('Merged raw results:', merged.length);
 
     // Filter out junk articles (removed/unavailable content from NewsAPI, etc.)
     merged = merged.filter(article => {
@@ -577,7 +582,7 @@ function mergeResults(resultsArrays, sortBy = 'publishedAt', query = '') {
         }
 
         // Normalize Title: lowercase, remove special chars
-        const titleKey = article.title ? article.title.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
+        const titleKey = article.title ? article.title.toLowerCase().replace(NON_ALPHANUM_RE, '') : '';
 
         // Also check titleKey specifically if we have one, to catch same article with different URLs
         if (titleKey && seen.has(titleKey)) return false;
@@ -588,7 +593,6 @@ function mergeResults(resultsArrays, sortBy = 'publishedAt', query = '') {
 
         return true;
     });
-    console.log('Deduped results:', merged.length);
 
     if (sortBy === 'relevancy') {
         // Drop articles with zero relevance score (query not found in title or description)
@@ -651,6 +655,8 @@ function toggleArticleSelection(index) {
 }
 
 // ─── Trending Topics ─────────────────────────────────────────────────────────
+
+const NON_ALPHANUM_RE = /[^a-z0-9]/g;
 
 const STOP_WORDS = new Set([
     'the','a','an','and','or','but','in','on','at','to','for','of','with','by',
