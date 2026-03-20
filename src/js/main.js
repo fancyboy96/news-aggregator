@@ -51,6 +51,43 @@ window.toggleArticleSelection = toggleArticleSelection;
 import { CountrySelector } from './components/country-selector.js';
 let countrySelector;
 let selectedRegionId = null;
+let selectedDateRange = 'all_time';
+
+const DATE_RANGE_PRESETS = {
+    last_week:     7,
+    last_month:    30,
+    last_3_months: 90,
+    last_6_months: 180,
+    last_year:     365,
+    all_time:      null,
+};
+
+function getDateRangeFromPreset(preset) {
+    const days = DATE_RANGE_PRESETS[preset] ?? null;
+    if (!days) return { from: '', to: '' };
+    const now = new Date();
+    const pad = d => String(d).padStart(2, '0');
+    const fmt = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    const from = new Date(now);
+    from.setDate(from.getDate() - days);
+    return { from: fmt(from), to: fmt(now) };
+}
+
+function setDateRange(preset) {
+    selectedDateRange = preset;
+    document.querySelectorAll('.date-range-btn').forEach(btn => {
+        const active = btn.dataset.range === preset;
+        btn.classList.toggle('bg-indigo-600', active);
+        btn.classList.toggle('text-white', active);
+        btn.classList.toggle('border-indigo-600', active);
+        btn.classList.toggle('bg-slate-50', !active);
+        btn.classList.toggle('dark:bg-slate-700\\/50', !active);
+        btn.classList.toggle('text-slate-600', !active);
+        btn.classList.toggle('dark:text-slate-300', !active);
+        btn.classList.toggle('border-slate-200', !active);
+        btn.classList.toggle('dark:border-slate-600', !active);
+    });
+}
 
 // --- Initialization ---
 function init() {
@@ -58,6 +95,11 @@ function init() {
 
     // Init Country Selector
     countrySelector = new CountrySelector(els.countrySelectorContainer);
+
+    // Init Date Range Buttons
+    document.querySelectorAll('.date-range-btn').forEach(btn => {
+        btn.addEventListener('click', () => setDateRange(btn.dataset.range));
+    });
 
     // Init Region Buttons
     initRegionButtons();
@@ -78,8 +120,7 @@ function init() {
             countrySelector.setValue(countries);
         }
         if (params.has('pageSize')) els.pageSizeInput.value = params.get('pageSize');
-        if (params.has('from')) els.fromInput.value = params.get('from');
-        if (params.has('to')) els.toInput.value = params.get('to');
+        if (params.has('dateRange')) setDateRange(params.get('dateRange'));
         if (params.has('domains')) els.domainsInput.value = params.get('domains');
         if (params.has('excludeDomains')) els.excludeDomainsInput.value = params.get('excludeDomains');
 
@@ -243,8 +284,7 @@ if (els.appLogo) {
         els.sortByInput.value = 'popularity';
         els.languageInput.value = 'en';
         els.pageSizeInput.value = '20';
-        els.fromInput.value = '';
-        els.toInput.value = '';
+        setDateRange('all_time');
         els.domainsInput.value = '';
         els.excludeDomainsInput.value = '';
 
@@ -333,8 +373,7 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
         if (countries.length > 0) params.set('country', countries.join(','));
 
         if (els.pageSizeInput.value) params.set('pageSize', els.pageSizeInput.value);
-        if (els.fromInput.value) params.set('from', els.fromInput.value);
-        if (els.toInput.value) params.set('to', els.toInput.value);
+        if (selectedDateRange && selectedDateRange !== 'all_time') params.set('dateRange', selectedDateRange);
         if (els.domainsInput.value) params.set('domains', els.domainsInput.value);
         if (els.excludeDomainsInput.value) params.set('excludeDomains', els.excludeDomainsInput.value);
 
@@ -387,8 +426,7 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
             language: els.languageInput.value,
             country: countrySelector.getValue().join(','),
             pageSize: els.pageSizeInput.value,
-            from: els.fromInput.value,
-            to: els.toInput.value,
+            ...getDateRangeFromPreset(selectedDateRange),
             domains: els.domainsInput.value.trim(),
             excludeDomains: els.excludeDomainsInput.value.trim(),
             searchIn: Array.from(document.querySelectorAll('input[name="searchIn"]:checked'))
