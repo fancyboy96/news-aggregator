@@ -290,18 +290,22 @@
 
                         <!-- Dates & Options -->
                         <div class="space-y-4">
-                            <div class="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label
-                                        class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">From</label>
-                                    <input type="date" id="fromInput"
-                                        class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-700 border-none rounded-lg text-sm text-slate-600 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500">
-                                </div>
-                                <div>
-                                    <label
-                                        class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">To</label>
-                                    <input type="date" id="toInput"
-                                        class="w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-700 border-none rounded-lg text-sm text-slate-600 dark:text-slate-200 focus:ring-2 focus:ring-indigo-500">
+                            <div>
+                                <label
+                                    class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Date Range</label>
+                                <div class="flex flex-wrap gap-2" id="dateRangeBtns">
+                                    <button type="button" data-range="last_week"
+                                        class="date-range-btn px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-indigo-400 dark:hover:border-indigo-500">Last Week</button>
+                                    <button type="button" data-range="last_month"
+                                        class="date-range-btn px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-indigo-400 dark:hover:border-indigo-500">Last Month</button>
+                                    <button type="button" data-range="last_3_months"
+                                        class="date-range-btn px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-indigo-400 dark:hover:border-indigo-500">Last 3 Months</button>
+                                    <button type="button" data-range="last_6_months"
+                                        class="date-range-btn px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-indigo-400 dark:hover:border-indigo-500">Last 6 Months</button>
+                                    <button type="button" data-range="last_year"
+                                        class="date-range-btn px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:border-indigo-400 dark:hover:border-indigo-500">Last Year</button>
+                                    <button type="button" data-range="all_time"
+                                        class="date-range-btn px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors bg-indigo-600 text-white border-indigo-600">All Time</button>
                                 </div>
                             </div>
 

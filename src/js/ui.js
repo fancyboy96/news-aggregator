@@ -14,8 +14,7 @@ export const els = {
     // countryInput: document.getElementById('countryInput'), // Replaced by CountrySelector
     countrySelectorContainer: 'country-selector-container', // ID string for component init
     pageSizeInput: document.getElementById('pageSizeInput'),
-    fromInput: document.getElementById('fromInput'),
-    toInput: document.getElementById('toInput'),
+    dateRangeBtns: document.getElementById('dateRangeBtns'),
     domainsInput: document.getElementById('domainsInput'),
     excludeDomainsInput: document.getElementById('excludeDomainsInput'),
     errorMessage: document.getElementById('errorMessage'),
