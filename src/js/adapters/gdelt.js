@@ -58,7 +58,7 @@ export class GdeltProvider extends NewsProvider {
         params.append('maxrecords', String(Math.min(parseInt(pageSize) || 25, 250)));
 
         // Sorting
-        params.append('sort', sortBy === 'relevancy' ? 'Relevance' : 'DateDesc');
+        params.append('sort', 'DateDesc');
 
         // Language
         const gdeltLang = language && ISO_TO_GDELT_LANG[language];

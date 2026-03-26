@@ -112,7 +112,11 @@ function init() {
         // Restore inputs
         els.searchInput.value = query;
 
-        if (params.has('sortBy')) els.sortByInput.value = params.get('sortBy');
+        if (params.has('sortBy')) {
+            const sortVal = params.get('sortBy');
+            // 'relevancy' was removed as a sort mode — fall back to popularity
+            els.sortByInput.value = sortVal === 'relevancy' ? 'popularity' : sortVal;
+        }
         if (params.has('category')) els.categoryInput.value = params.get('category');
         if (params.has('language')) els.languageInput.value = params.get('language');
         if (params.has('country')) {
@@ -628,18 +632,13 @@ function mergeResults(resultsArrays, sortBy = 'publishedAt', query = '') {
     });
     console.log('Deduped results:', merged.length);
 
-    if (sortBy === 'relevancy') {
-        // Drop articles with zero relevance score (query not found in title or description)
-        if (query) {
-            merged = merged.filter(a => scoreArticle(a, query) > 0);
-        }
-        // Score each article by query term matches in title/description, with a recency tiebreaker
-        merged.sort((a, b) => {
-            const scoreDiff = scoreArticle(b, query) - scoreArticle(a, query);
-            if (scoreDiff !== 0) return scoreDiff;
-            return new Date(b.publishedAt) - new Date(a.publishedAt);
-        });
-    } else if (!sortBy || sortBy === 'publishedAt') {
+    // Always filter for relevance when there's a query — this is a background quality gate
+    // independent of sort order, so every sort mode shows only meaningful results.
+    if (query) {
+        merged = merged.filter(a => scoreArticle(a, query) > 0);
+    }
+
+    if (!sortBy || sortBy === 'publishedAt') {
         merged.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
     }
     // For 'popularity', keep the providers' interleaved order (each provider's own ranking)
