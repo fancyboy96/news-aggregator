@@ -13,7 +13,8 @@ const state = {
     providers: ['newsapi', 'newsdata', 'gnews'], // Default active providers
     theme: 'light',
     category: '',
-    providerCursors: {} // cursor-based pagination state keyed by provider name
+    providerCursors: {}, // cursor-based pagination state keyed by provider name
+    viewMode: 'grid' // 'grid' | 'list'
 };
 
 const listeners = new Set();

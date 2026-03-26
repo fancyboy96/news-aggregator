@@ -27,7 +27,8 @@ import {
     updateSelectionUI,
     showWarning,
     renderTrendingTopics,
-    renderCoveragePulse
+    renderCoveragePulse,
+    applyViewMode
 } from './ui.js';
 import {
     fetchNews,
@@ -89,9 +90,28 @@ function setDateRange(preset) {
     });
 }
 
+// --- View Mode ---
+function initViewMode() {
+    const saved = localStorage.getItem('viewMode') || 'grid';
+    store.set({ viewMode: saved });
+    applyViewMode(saved);
+}
+
+function setViewMode(mode) {
+    store.set({ viewMode: mode });
+    localStorage.setItem('viewMode', mode);
+    applyViewMode(mode);
+    // Re-render current articles in new layout if any exist
+    const articles = store.get('articles');
+    if (articles.length > 0) {
+        renderResults(articles, store.get('query'), store.get('isSelectionMode'), store.get('selectedArticleIndices'), mode);
+    }
+}
+
 // --- Initialization ---
 function init() {
     initTheme();
+    initViewMode();
 
     // Init Country Selector
     countrySelector = new CountrySelector(els.countrySelectorContainer);
@@ -272,6 +292,10 @@ els.generateDigestBtn.addEventListener('click', () => {
 
 els.themeToggleBtn.addEventListener('click', toggleTheme);
 
+// View mode toggle
+if (els.gridViewBtn) els.gridViewBtn.addEventListener('click', () => setViewMode('grid'));
+if (els.listViewBtn) els.listViewBtn.addEventListener('click', () => setViewMode('list'));
+
 if (els.loadMoreContainer) {
     const btn = document.getElementById('loadMoreBtn');
     if (btn) {
@@ -318,6 +342,7 @@ if (els.appLogo) {
             isSelectionMode: false,
             selectedArticleIndices: new Set(),
             providerCursors: {}
+            // viewMode intentionally preserved
         });
 
         // 3. Reset UI
@@ -511,7 +536,7 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
 
             if (trulyNew.length > 0) {
                 store.set({ articles: [...currentArticles, ...trulyNew] });
-                appendResults(trulyNew, currentArticles.length, store.get('query'), store.get('isSelectionMode'), store.get('selectedArticleIndices'));
+                appendResults(trulyNew, currentArticles.length, store.get('query'), store.get('isSelectionMode'), store.get('selectedArticleIndices'), store.get('viewMode'));
                 els.loadMoreContainer.classList.remove('hidden');
             } else {
                 const btn = document.getElementById('loadMoreBtn');
@@ -525,7 +550,7 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
         } else {
             if (mergedNew.length > 0) {
                 store.set({ articles: mergedNew });
-                renderResults(mergedNew, store.get('query'), store.get('isSelectionMode'), store.get('selectedArticleIndices'));
+                renderResults(mergedNew, store.get('query'), store.get('isSelectionMode'), store.get('selectedArticleIndices'), store.get('viewMode'));
 
                 els.resultsGrid.classList.remove('hidden');
                 els.actionBar.classList.remove('hidden');
@@ -666,7 +691,7 @@ function setSelectionMode(active) {
         document.body.classList.remove('selection-mode');
     }
     // Re-render to show/hide checkboxes
-    renderResults(store.get('articles'), store.get('query'), active, store.get('selectedArticleIndices'));
+    renderResults(store.get('articles'), store.get('query'), active, store.get('selectedArticleIndices'), store.get('viewMode'));
 }
 
 function toggleArticleSelection(index) {
