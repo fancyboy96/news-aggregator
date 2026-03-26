@@ -27,7 +27,7 @@ export async function fetchWithRetry(url, retries = 3, backoff = 300) {
                 throw new Error(`API Key Error (${response.status})`);
             }
             if (response.status === 429) {
-                throw new Error('Rate limit reached. Please try again later.');
+                throw new Error(`Rate limit reached (429). Please try again later.`);
             }
             if (response.status === 426) {
                 throw new Error('NewsAPI does not allow requests from the file system (file://). Please run this app on a local server (e.g. localhost).');
@@ -38,12 +38,24 @@ export async function fetchWithRetry(url, retries = 3, backoff = 300) {
         return await response.json();
 
     } catch (error) {
-        if (retries > 0 && !error.message.includes('API Key Error')) {
+        const isNonRetryable = error.message.includes('API Key Error') || error.message.includes('Rate limit reached');
+        if (retries > 0 && !isNonRetryable) {
             await new Promise(resolve => setTimeout(resolve, backoff));
             return fetchWithRetry(url, retries - 1, backoff * 2);
         }
         throw error;
     }
+}
+
+/**
+ * Races a promise against a timeout. Rejects with a timeout error if the
+ * promise does not settle within `ms` milliseconds.
+ */
+export function withTimeout(promise, ms) {
+    const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error(`Request timed out after ${ms}ms`)), ms)
+    );
+    return Promise.race([promise, timeout]);
 }
 
 /**

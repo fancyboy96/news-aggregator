@@ -32,7 +32,8 @@ import {
 } from './ui.js';
 import {
     fetchNews,
-    fetchGdeltTimeline
+    fetchGdeltTimeline,
+    withTimeout
 } from './api.js';
 import { REGIONS, getRegionById } from './regions.js';
 import {
@@ -44,6 +45,47 @@ import {
 
 // Initialize Analytics
 inject();
+
+// ─── API Call Optimizations ────────────────────────────────────────────────────
+
+const SEARCH_CACHE_TTL_MS = 5 * 60 * 1000;   // 5 minutes
+const GDELT_CACHE_TTL_MS  = 60 * 60 * 1000;  // 1 hour
+const TRENDING_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const PROVIDER_TIMEOUT_MS   = 5000;            // 5 seconds per provider
+
+/** In-memory cache for search results: cacheKey → { articles, timestamp } */
+const searchCache = new Map();
+
+/** In-memory cache for GDELT timeline: query → { buckets, timestamp } */
+const gdeltTimelineCache = new Map();
+
+function makeSearchCacheKey(query, providers, options) {
+    return JSON.stringify({
+        q: query,
+        providers: [...providers].sort(),
+        sortBy: options.sortBy,
+        category: options.category,
+        language: options.language,
+        country: options.country,
+        pageSize: options.pageSize,
+        from: options.from,
+        to: options.to,
+        domains: options.domains,
+        excludeDomains: options.excludeDomains,
+        searchIn: options.searchIn,
+        page: options.page,
+    });
+}
+
+function debounce(fn, ms) {
+    let timer;
+    return (...args) => {
+        clearTimeout(timer);
+        timer = setTimeout(() => fn(...args), ms);
+    };
+}
+
+const debouncedPerformSearch = debounce((q) => performSearch(q, true), 300);
 
 // Make shareArticle globally available for onclick handlers in HTML
 window.shareArticle = shareArticle;
@@ -219,7 +261,7 @@ document.querySelectorAll('.quick-category-btn').forEach(btn => {
         const category = btn.dataset.category;
         els.categoryInput.value = category;
         els.searchInput.value = ''; // Clear search input
-        performSearch('', true);
+        debouncedPerformSearch('');
     });
 });
 
@@ -388,6 +430,57 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
         return;
     }
 
+    // ── Cache lookup (only for fresh searches, not load-more) ──────────────
+    if (!isLoadMore) {
+        const previewOptions = {
+            sortBy: els.sortByInput.value,
+            category: els.categoryInput.value,
+            language: els.languageInput.value,
+            country: countrySelector.getValue().join(','),
+            pageSize: els.pageSizeInput.value,
+            ...getDateRangeFromPreset(selectedDateRange),
+            domains: els.domainsInput.value.trim(),
+            excludeDomains: els.excludeDomainsInput.value.trim(),
+            searchIn: Array.from(document.querySelectorAll('input[name="searchIn"]:checked'))
+                .map(cb => cb.value).join(','),
+            page: 1,
+        };
+        const cacheKey = makeSearchCacheKey(query, providers, previewOptions);
+        const cached = searchCache.get(cacheKey);
+        if (cached && Date.now() - cached.timestamp < SEARCH_CACHE_TTL_MS) {
+            if (pushState) {
+                const params = new URLSearchParams();
+                params.set('q', query);
+                params.set('provider', providers.join(','));
+                if (previewOptions.category) params.set('category', previewOptions.category);
+                if (previewOptions.sortBy) params.set('sortBy', previewOptions.sortBy);
+                if (previewOptions.language) params.set('language', previewOptions.language);
+                if (previewOptions.country) params.set('country', previewOptions.country);
+                if (previewOptions.pageSize) params.set('pageSize', previewOptions.pageSize);
+                if (selectedDateRange && selectedDateRange !== 'all_time') params.set('dateRange', selectedDateRange);
+                if (previewOptions.domains) params.set('domains', previewOptions.domains);
+                if (previewOptions.excludeDomains) params.set('excludeDomains', previewOptions.excludeDomains);
+                if (previewOptions.searchIn) params.set('searchIn', previewOptions.searchIn);
+                window.history.pushState({}, '', `${window.location.pathname}?${params.toString()}`);
+            }
+            store.set({ query, currentPage: 1, providerCursors: {}, articles: cached.articles });
+            setError(null);
+            els.resultsGrid.innerHTML = '';
+            renderResults(cached.articles, query, store.get('isSelectionMode'), store.get('selectedArticleIndices'), store.get('viewMode'));
+            els.resultsGrid.classList.remove('hidden');
+            els.actionBar.classList.remove('hidden');
+            els.loadMoreContainer.classList.remove('hidden');
+            els.coveragePulse.classList.add('hidden');
+            renderCoveragePulse(cached.articles, query);
+            if (query) {
+                fetchGdeltTimelineCached(query).then(buckets => {
+                    if (buckets) renderCoveragePulse([], query, buckets);
+                }).catch(() => {});
+            }
+            return;
+        }
+    }
+
     // Update URL State (only for new searches)
     if (pushState && !isLoadMore) {
         const params = new URLSearchParams();
@@ -477,7 +570,7 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
                 const providerOptions = providerCursors[providerName]
                     ? { ...options, cursor: providerCursors[providerName] }
                     : options;
-                const data = await fetchNews(providerName, query, providerOptions);
+                const data = await withTimeout(fetchNews(providerName, query, providerOptions), PROVIDER_TIMEOUT_MS);
 
                 // Store next cursor if the provider returned one
                 if (data.nextCursor) {
@@ -503,6 +596,12 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
         const resultsArrays = await Promise.all(promises);
 
         const mergedNew = mergeResults(resultsArrays, options.sortBy, query);
+
+        // ── Cache fresh search results ──────────────────────────────────────
+        if (!isLoadMore && mergedNew.length > 0) {
+            const cacheKey = makeSearchCacheKey(query, providers, options);
+            searchCache.set(cacheKey, { articles: mergedNew, timestamp: Date.now() });
+        }
 
         if (isLoadMore) {
             const currentArticles = store.get('articles');
@@ -560,7 +659,7 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
 
                 // Refine pulse with GDELT's comprehensive 7-day timeline data
                 if (query) {
-                    fetchGdeltTimeline(query).then(buckets => {
+                    fetchGdeltTimelineCached(query).then(buckets => {
                         if (buckets) renderCoveragePulse([], query, buckets);
                     }).catch(() => {});
                 }
@@ -756,22 +855,54 @@ function extractTrendingKeywords(articles) {
 
 async function fetchAndRenderTrending() {
     try {
-        const data = await fetchNews('newsapi', '', {
-            pageSize: '50', language: 'en', sortBy: 'popularity'
-        });
-        const keywords = extractTrendingKeywords(data.articles || []);
+        let keywords;
+
+        // Check localStorage cache first
+        const TRENDING_KEY = 'trending_cache';
+        try {
+            const raw = localStorage.getItem(TRENDING_KEY);
+            if (raw) {
+                const { data: cached, timestamp } = JSON.parse(raw);
+                if (Date.now() - timestamp < TRENDING_CACHE_TTL_MS) {
+                    keywords = cached;
+                }
+            }
+        } catch (_) { /* corrupt cache — ignore */ }
+
+        if (!keywords) {
+            const data = await fetchNews('newsapi', '', {
+                pageSize: '50', language: 'en', sortBy: 'popularity'
+            });
+            keywords = extractTrendingKeywords(data.articles || []);
+            try {
+                localStorage.setItem(TRENDING_KEY, JSON.stringify({ data: keywords, timestamp: Date.now() }));
+            } catch (_) { /* storage full or unavailable — ignore */ }
+        }
+
         renderTrendingTopics(keywords);
 
-        // Attach click handlers to trending chips
+        // Attach debounced click handlers to trending chips
         document.querySelectorAll('.trending-chip').forEach(btn => {
             btn.addEventListener('click', () => {
                 els.searchInput.value = btn.dataset.query;
-                performSearch(btn.dataset.query, true);
+                debouncedPerformSearch(btn.dataset.query);
             });
         });
     } catch (e) {
         // Trending is non-critical — fail silently
     }
+}
+
+async function fetchGdeltTimelineCached(query) {
+    const cached = gdeltTimelineCache.get(query);
+    if (cached && Date.now() - cached.timestamp < GDELT_CACHE_TTL_MS) {
+        return cached.buckets;
+    }
+    const buckets = await fetchGdeltTimeline(query);
+    if (buckets) {
+        gdeltTimelineCache.set(query, { buckets, timestamp: Date.now() });
+    }
+    return buckets;
 }
 
 // ─── Region Selection ─────────────────────────────────────────────────────────
