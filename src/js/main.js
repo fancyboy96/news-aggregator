@@ -704,13 +704,14 @@ function toggleArticleSelection(index) {
     // Update specific card UI without full re-render
     const card = document.getElementById(`article-${index}`);
     const checkbox = document.getElementById(`checkbox-${index}`);
+    const overlay = document.getElementById(`overlay-${index}`);
     if (card && checkbox) {
-        if (selectedIndices.has(index)) {
-            card.classList.add('selected');
-            checkbox.checked = true;
-        } else {
-            card.classList.remove('selected');
-            checkbox.checked = false;
+        const nowSelected = selectedIndices.has(index);
+        card.classList.toggle('selected', nowSelected);
+        checkbox.checked = nowSelected;
+        if (overlay) {
+            overlay.classList.toggle('opacity-100', nowSelected);
+            overlay.classList.toggle('opacity-0', !nowSelected);
         }
     }
 }
