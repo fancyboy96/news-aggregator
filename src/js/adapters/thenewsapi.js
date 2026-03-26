@@ -30,9 +30,7 @@ export class TheNewsApiProvider extends NewsProvider {
 
         // Sort mapping
         // TheNewsAPI supports: relevance, published_at, popularity
-        if (sortBy === 'relevancy') {
-            params.append('sort', 'relevance');
-        } else if (sortBy === 'popularity') {
+        if (sortBy === 'popularity') {
             params.append('sort', 'popularity');
         } else {
             params.append('sort', 'published_at');

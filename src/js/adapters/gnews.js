@@ -45,7 +45,7 @@ export class GNewsProvider extends NewsProvider {
         if (to) params.append('to', new Date(to).toISOString());
 
         // Sort mapping
-        if (sortBy === 'relevancy' || sortBy === 'popularity') {
+        if (sortBy === 'popularity') {
             params.append('sortby', 'relevance');
         } else {
             params.append('sortby', 'publishedAt');
