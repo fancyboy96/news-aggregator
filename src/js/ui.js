@@ -262,7 +262,7 @@ function generateArticlesHtml(articles, startIndex, query, isSelectionMode, sele
             }
 
             return `
-                <article id="article-${index}" class="article-card group bg-white dark:bg-slate-900/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 dark:border-slate-700/50 overflow-hidden flex flex-row items-start gap-0 relative transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600 ${isSelected ? 'selected' : ''}" style="--stagger-delay: ${staggerDelay}ms" ${clickHandler}>
+                <article id="article-${index}" data-view="list" class="article-card group bg-white dark:bg-slate-900/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 dark:border-slate-700/50 overflow-hidden flex flex-row items-start gap-0 relative transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600 ${isSelected ? 'selected' : ''}" style="--stagger-delay: ${staggerDelay}ms" ${clickHandler}>
                     ${selectionOverlay}
                     <!-- Thumbnail -->
                     <div class="w-28 sm:w-36 shrink-0 self-stretch overflow-hidden bg-slate-100 dark:bg-slate-800">

@@ -99,6 +99,11 @@ html.dark .article-card:hover {
         0 8px 24px -8px rgba(0, 0, 0, 0.5) !important;
 }
 
+/* Suppress vertical lift for list-view rows — they stack and would overlap */
+.article-card[data-view="list"]:hover {
+    transform: none;
+}
+
 /* ─── Fade-in Animation ─────────────────────────────────────────────── */
 
 @keyframes fade-in {
