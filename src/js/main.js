@@ -415,7 +415,10 @@ async function performSearch(query, pushState = true, isLoadMore = false) {
         btn.disabled = true;
     }
 
-    if (!isLoadMore) setLoading(true);
+    if (!isLoadMore) {
+        setLoading(true);
+        els.loadingIndicator.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
 
     try {
         const currentPage = store.get('currentPage');
