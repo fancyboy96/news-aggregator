@@ -40,7 +40,9 @@ export const els = {
     appLogo: document.getElementById('appLogo'),
     trendingSection: document.getElementById('trendingSection'),
     trendingChips: document.getElementById('trendingChips'),
-    coveragePulse: document.getElementById('coveragePulse')
+    coveragePulse: document.getElementById('coveragePulse'),
+    gridViewBtn: document.getElementById('gridViewBtn'),
+    listViewBtn: document.getElementById('listViewBtn')
 };
 
 export function updateProviderUI() {
@@ -69,6 +71,37 @@ export function toggleTheme() {
     const isDark = document.documentElement.classList.toggle('dark');
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
     updateThemeIcon(isDark);
+}
+
+export function applyViewMode(mode) {
+    const isGrid = mode === 'grid';
+
+    // Toggle grid container layout classes
+    if (isGrid) {
+        els.resultsGrid.classList.add('grid', 'grid-cols-1', 'md:grid-cols-2', 'lg:grid-cols-3', 'gap-8');
+        els.resultsGrid.classList.remove('flex', 'flex-col', 'gap-3');
+    } else {
+        els.resultsGrid.classList.remove('grid', 'grid-cols-1', 'md:grid-cols-2', 'lg:grid-cols-3', 'gap-8');
+        els.resultsGrid.classList.add('flex', 'flex-col', 'gap-3');
+    }
+
+    // Update button active states
+    const activeClasses = ['bg-white', 'dark:bg-slate-700', 'shadow-sm', 'text-slate-700', 'dark:text-slate-200'];
+    const inactiveClasses = ['text-slate-400', 'dark:text-slate-500', 'hover:text-slate-600', 'dark:hover:text-slate-300'];
+
+    if (els.gridViewBtn && els.listViewBtn) {
+        if (isGrid) {
+            els.gridViewBtn.classList.add(...activeClasses);
+            els.gridViewBtn.classList.remove(...inactiveClasses);
+            els.listViewBtn.classList.remove(...activeClasses);
+            els.listViewBtn.classList.add(...inactiveClasses);
+        } else {
+            els.listViewBtn.classList.add(...activeClasses);
+            els.listViewBtn.classList.remove(...inactiveClasses);
+            els.gridViewBtn.classList.remove(...activeClasses);
+            els.gridViewBtn.classList.add(...inactiveClasses);
+        }
+    }
 }
 
 export function initTheme() {
@@ -158,13 +191,13 @@ export function updateSelectionUI(count) {
     els.generateDigestBtn.textContent = count > 0 ? `Generate Digest (${count})` : 'Generate Digest';
 }
 
-export function renderResults(articles, query, isSelectionMode, selectedIndices) {
+export function renderResults(articles, query, isSelectionMode, selectedIndices, viewMode = 'grid') {
     console.log('Rendering articles:', articles.length);
-    els.resultsGrid.innerHTML = generateArticlesHtml(articles, 0, query, isSelectionMode, selectedIndices);
+    els.resultsGrid.innerHTML = generateArticlesHtml(articles, 0, query, isSelectionMode, selectedIndices, viewMode);
 }
 
-export function appendResults(articles, startIndex, query, isSelectionMode, selectedIndices) {
-    const html = generateArticlesHtml(articles, startIndex, query, isSelectionMode, selectedIndices);
+export function appendResults(articles, startIndex, query, isSelectionMode, selectedIndices, viewMode = 'grid') {
+    const html = generateArticlesHtml(articles, startIndex, query, isSelectionMode, selectedIndices, viewMode);
     els.resultsGrid.insertAdjacentHTML('beforeend', html);
 }
 
@@ -180,18 +213,98 @@ function getRelativeTime(dateStr) {
     return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
-function generateArticlesHtml(articles, startIndex, query, isSelectionMode, selectedIndices) {
+function getSourceLabel(apiSource) {
+    return apiSource === 'newsdata' ? 'NewsData' :
+        apiSource === 'gnews' ? 'GNews' :
+        apiSource === 'thenewsapi' ? 'TheNewsAPI' :
+        apiSource === 'marketaux' ? 'Marketaux' :
+        apiSource === 'gdelt' ? 'GDELT' : 'NewsAPI';
+}
+
+function getSourceColorClass(apiSource) {
+    return apiSource === 'newsdata' ? 'bg-orange-100 text-orange-700' :
+        apiSource === 'gnews' ? 'bg-blue-100 text-blue-700' :
+        apiSource === 'thenewsapi' ? 'bg-purple-100 text-purple-700' :
+        apiSource === 'marketaux' ? 'bg-rose-100 text-rose-700' :
+        apiSource === 'gdelt' ? 'bg-teal-100 text-teal-700' : 'bg-emerald-100 text-emerald-700';
+}
+
+function generateArticlesHtml(articles, startIndex, query, isSelectionMode, selectedIndices, viewMode = 'grid') {
     return articles.map((article, i) => {
         const index = startIndex + i;
         const timeAgo = getRelativeTime(article.publishedAt);
         const image = article.urlToImage || 'https://placehold.co/600x400/f1f5f9/94a3b8?text=No+Image';
         const staggerDelay = (i % 9) * 55;
-
-        // Apply highlighting
         const titleHtml = highlightText(article.title, query);
         const descHtml = highlightText(article.description, query);
+        const sourceColorClass = getSourceColorClass(article.apiSource);
+        const sourceLabel = getSourceLabel(article.apiSource);
+        const isSelected = selectedIndices.has(index);
+        const clickHandler = isSelectionMode ? `onclick="window.toggleArticleSelection(${index})"` : '';
 
-        // Check for content snippet
+        const selectionOverlay = isSelectionMode ? `
+            <div class="absolute top-3 right-3 z-20">
+                <input type="checkbox" id="checkbox-${index}" class="w-5 h-5 rounded-md border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-all cursor-pointer shadow-sm selection-checkbox" ${isSelected ? 'checked' : ''}>
+            </div>
+            <div class="absolute inset-0 bg-indigo-500/5 backdrop-blur-[1px] pointer-events-none transition-opacity duration-300 ${isSelected ? 'opacity-100' : 'opacity-0'}" id="overlay-${index}"></div>
+        ` : '';
+
+        if (viewMode === 'list') {
+            // Content snippet (compact version)
+            let snippetHtml = '';
+            if (article.content) {
+                const snippet = getSnippet(article.content, query);
+                if (snippet) {
+                    snippetHtml = `<div class="mt-1.5 text-xs text-slate-400 dark:text-slate-500 font-mono truncate">
+                        <span class="font-bold text-indigo-400 uppercase tracking-wider text-[10px] mr-1">Match:</span>${snippet}
+                    </div>`;
+                }
+            }
+
+            return `
+                <article id="article-${index}" class="article-card group bg-white dark:bg-slate-900/70 backdrop-blur-sm rounded-2xl border border-slate-200/60 dark:border-slate-700/50 overflow-hidden flex flex-row items-start gap-0 relative transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600 ${isSelected ? 'selected' : ''}" style="--stagger-delay: ${staggerDelay}ms" ${clickHandler}>
+                    ${selectionOverlay}
+                    <!-- Thumbnail -->
+                    <div class="w-28 sm:w-36 shrink-0 self-stretch overflow-hidden bg-slate-100 dark:bg-slate-800">
+                        <img src="${image}" alt="${article.title}" loading="lazy"
+                            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            onerror="this.onerror=null;this.src='https://placehold.co/600x400/f1f5f9/94a3b8?text=No+Image'">
+                    </div>
+                    <!-- Content -->
+                    <div class="flex-1 min-w-0 p-4 flex flex-col gap-1.5">
+                        <div class="flex items-center gap-2 flex-wrap">
+                            <span class="text-xs font-semibold text-slate-600 dark:text-slate-300 truncate max-w-[140px]">${article.source.name || 'Unknown Source'}</span>
+                            <span class="text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full ${sourceColorClass}">${sourceLabel}</span>
+                            <span class="text-xs text-slate-400 dark:text-slate-500 ml-auto shrink-0">${timeAgo}</span>
+                        </div>
+                        <h3 class="text-sm font-bold text-slate-900 dark:text-white leading-snug line-clamp-2 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                            <a href="${article.url}" target="_blank" class="focus:outline-none ${isSelectionMode ? 'pointer-events-none' : ''}">
+                                ${titleHtml}
+                            </a>
+                        </h3>
+                        <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 leading-relaxed">
+                            ${descHtml || ''}
+                        </p>
+                        ${snippetHtml}
+                        <div class="flex items-center justify-between mt-1 pt-1.5 border-t border-slate-100 dark:border-slate-800">
+                            <a href="${article.url}" target="_blank" class="text-indigo-600 dark:text-indigo-400 text-xs font-semibold hover:text-indigo-700 dark:hover:text-indigo-300 inline-flex items-center gap-1 group/link ${isSelectionMode ? 'pointer-events-none opacity-50' : ''}">
+                                Read full story
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 transform group-hover/link:translate-x-0.5 transition-transform" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                </svg>
+                            </a>
+                            <button onclick="window.shareArticle('${article.url}', event)" class="text-slate-400 hover:text-indigo-600 dark:text-slate-500 dark:hover:text-indigo-400 transition-colors p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 ${isSelectionMode ? 'pointer-events-none opacity-50' : ''}" title="Copy Link">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </article>
+            `;
+        }
+
+        // ── Grid card (default) ──────────────────────────────────────────────
         let contentSnippetHtml = '';
         if (article.content) {
             const snippet = getSnippet(article.content, query);
@@ -203,26 +316,16 @@ function generateArticlesHtml(articles, startIndex, query, isSelectionMode, sele
             }
         }
 
-        const isSelected = selectedIndices.has(index);
-        const selectionOverlay = isSelectionMode ? `
+        const gridSelectionOverlay = isSelectionMode ? `
             <div class="absolute top-4 right-4 z-20">
                 <input type="checkbox" id="checkbox-${index}" class="w-6 h-6 rounded-md border-slate-300 text-indigo-600 focus:ring-indigo-500 transition-all cursor-pointer shadow-sm selection-checkbox" ${isSelected ? 'checked' : ''}>
             </div>
             <div class="absolute inset-0 bg-indigo-500/5 backdrop-blur-[1px] pointer-events-none transition-opacity duration-300 ${isSelected ? 'opacity-100' : 'opacity-0'}" id="overlay-${index}"></div>
         ` : '';
 
-        const clickHandler = isSelectionMode ? `onclick="window.toggleArticleSelection(${index})"` : '';
-
-        // Source Badge Color
-        const sourceColorClass = article.apiSource === 'newsdata' ? 'bg-orange-100 text-orange-700' :
-            (article.apiSource === 'gnews' ? 'bg-blue-100 text-blue-700' :
-                (article.apiSource === 'thenewsapi' ? 'bg-purple-100 text-purple-700' :
-                    (article.apiSource === 'marketaux' ? 'bg-rose-100 text-rose-700' :
-                        (article.apiSource === 'gdelt' ? 'bg-teal-100 text-teal-700' : 'bg-emerald-100 text-emerald-700'))));
-
         return `
             <article id="article-${index}" class="article-card group bg-white dark:bg-slate-900/70 backdrop-blur-sm rounded-3xl shadow-sm border border-slate-200/60 dark:border-slate-700/50 overflow-hidden flex flex-col h-full relative transition-all duration-300 ${isSelected ? 'selected' : ''}" style="--stagger-delay: ${staggerDelay}ms" ${clickHandler}>
-                ${selectionOverlay}
+                ${gridSelectionOverlay}
                 <div class="h-56 overflow-hidden relative bg-slate-100 dark:bg-slate-800">
                     <img src="${image}" alt="${article.title}" loading="lazy" class="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-700" onerror="this.onerror=null;this.src='https://placehold.co/600x400/f1f5f9/94a3b8?text=No+Image'">
                     <!-- Editorial gradient overlay -->
@@ -234,7 +337,7 @@ function generateArticlesHtml(articles, startIndex, query, isSelectionMode, sele
                     </div>
                     <div class="absolute bottom-3 right-3">
                         <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full ${sourceColorClass} shadow-sm">
-                            ${article.apiSource === 'newsdata' ? 'NewsData' : (article.apiSource === 'gnews' ? 'GNews' : (article.apiSource === 'thenewsapi' ? 'TheNewsAPI' : (article.apiSource === 'marketaux' ? 'Marketaux' : (article.apiSource === 'gdelt' ? 'GDELT' : 'NewsAPI'))))}
+                            ${sourceLabel}
                         </span>
                     </div>
                 </div>
@@ -242,22 +345,22 @@ function generateArticlesHtml(articles, startIndex, query, isSelectionMode, sele
                     <div class="flex justify-between items-center mb-3">
                         <span class="text-xs font-medium text-slate-400 dark:text-slate-500">${timeAgo}</span>
                     </div>
-                    
+
                     <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-3 leading-tight group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
                         <a href="${article.url}" target="_blank" class="focus:outline-none ${isSelectionMode ? 'pointer-events-none' : ''}">
                             ${titleHtml}
                         </a>
                     </h3>
-                    
+
                     <p class="text-slate-600 dark:text-slate-300 text-sm mb-6 flex-1 line-clamp-3 leading-relaxed">
                         ${descHtml || 'No description available.'}
                     </p>
-                    
+
                     ${contentSnippetHtml}
-                    
+
                     <div class="mt-auto pt-4 border-t border-slate-50 dark:border-slate-700 flex justify-between items-center">
                         <a href="${article.url}" target="_blank" class="text-indigo-600 dark:text-indigo-400 text-sm font-bold hover:text-indigo-700 dark:hover:text-indigo-300 inline-flex items-center gap-1 group/link ${isSelectionMode ? 'pointer-events-none opacity-50' : ''}">
-                            Read full story 
+                            Read full story
                             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transform group-hover/link:translate-x-1 transition-transform" viewBox="0 0 20 20" fill="currentColor">
                                 <path fill-rule="evenodd" d="M12.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-2.293-2.293a1 1 0 010-1.414z" clip-rule="evenodd" />
                             </svg>
